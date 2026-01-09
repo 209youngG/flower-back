@@ -5,6 +5,8 @@ import com.flower.product.domain.Product;
 import com.flower.product.domain.ProductAddon;
 import com.flower.product.domain.ProductCategory;
 import com.flower.product.domain.ProductOption;
+import com.flower.product.dto.CreateProductOptionRequest;
+import com.flower.product.dto.CreateProductRequest;
 import com.flower.product.dto.ProductDto;
 import com.flower.product.repository.ProductAddonRepository;
 import com.flower.product.repository.ProductOptionRepository;
@@ -116,8 +118,47 @@ public class ProductService implements ProductQueryService {
     }
 
     @Transactional
+    public Product createProduct(CreateProductRequest request) {
+        log.info("신규 상품 생성 요청: {}", request.name());
+
+        // 1. 상품 엔티티 생성 및 저장
+        Product product = Product.builder()
+                .name(request.name())
+                .productCode(request.productCode())
+                .description(request.description())
+                .price(request.price())
+                .stockQuantity(request.stockQuantity())
+                .category(request.category())
+                .deliveryType(request.deliveryType())
+                .thumbnailUrl(request.thumbnailUrl())
+                .isActive(true)
+                .build();
+        
+        Product savedProduct = productRepository.save(product);
+
+        // 2. 상품 옵션 저장
+        if (request.options() != null && !request.options().isEmpty()) {
+            List<ProductOption> options = request.options().stream()
+                    .map(optRequest -> ProductOption.builder()
+                            .product(savedProduct)
+                            .name(optRequest.name())
+                            .value(optRequest.value())
+                            .priceAdjustment(optRequest.priceAdjustment())
+                            .stockQuantity(optRequest.stockQuantity())
+                            .displayOrder(optRequest.displayOrder())
+                            .isAvailable(true)
+                            .build())
+                    .collect(Collectors.toList());
+            
+            productOptionRepository.saveAll(options);
+        }
+
+        return savedProduct;
+    }
+    
+    // 테스트용 등에서 Entity 직접 저장이 필요한 경우를 위해 유지 (오버로딩)
+    @Transactional
     public Product createProduct(Product product) {
-        log.info("신규 상품 생성: {}", product.getName());
         return productRepository.save(product);
     }
 

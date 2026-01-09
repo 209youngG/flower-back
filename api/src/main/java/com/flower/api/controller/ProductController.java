@@ -1,6 +1,5 @@
 package com.flower.api.controller;
 
-import com.flower.common.exception.EntityNotFoundException;
 import com.flower.product.domain.Product;
 import com.flower.product.dto.CreateProductRequest;
 import com.flower.product.dto.ProductDto;
@@ -29,20 +28,8 @@ public class ProductController {
     @Operation(summary = "상품 등록", description = "새로운 상품을 등록합니다.")
     @PostMapping
     public ResponseEntity<ProductDto> createProduct(@RequestBody CreateProductRequest request) {
-        // DTO -> Entity 변환
-        Product product = Product.builder()
-                .name(request.name())
-                .productCode(request.productCode())
-                .description(request.description())
-                .price(request.price())
-                .stockQuantity(request.stockQuantity())
-                .category(request.category())
-                .deliveryType(request.deliveryType())
-                .thumbnailUrl(request.thumbnailUrl())
-                .isActive(true)
-                .build();
-
-        Product savedProduct = productService.createProduct(product);
+        // Service가 DTO를 받아 처리하도록 위임
+        Product savedProduct = productService.createProduct(request);
         ProductDto responseDto = productQueryService.getProductById(savedProduct.getId());
         
         return ResponseEntity.created(URI.create("/api/v1/products/" + savedProduct.getId())).body(responseDto);
@@ -54,8 +41,7 @@ public class ProductController {
             @PathVariable Long productId,
             @RequestBody UpdateProductRequest request) {
         
-        // 업데이트를 위한 임시 Entity 생성 (Service가 Entity를 요구하므로)
-        // 실제로는 Service가 DTO를 받도록 리팩토링하는 것이 좋음
+        // 업데이트를 위한 임시 Entity 생성 (추후 이 부분도 Service로 로직 이동 권장)
         Product updateInfo = Product.builder()
                 .name(request.name())
                 .description(request.description())
