@@ -1,4 +1,4 @@
-# Flower Shop Backend (Modular Monolith)
+# Flower Shop Backend (flower-back) (Modular Monolith)
 
 Spring Boot 4.0.0과 Java 25를 기반으로 한 꽃 쇼핑몰 백엔드 프로젝트입니다.
 도메인 주도 설계(DDD)와 이벤트 기반 아키텍처(Event-Driven Architecture)를 적용하여 확장성과 유지보수성을 극대화한 **모듈러 모놀리스(Modular Monolith)** 구조를 따르고 있습니다.
