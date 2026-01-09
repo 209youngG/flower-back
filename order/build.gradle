@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
     implementation project(':common')
 
     implementation 'org.springframework.boot:spring-boot-starter'

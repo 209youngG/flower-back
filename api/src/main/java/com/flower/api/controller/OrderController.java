@@ -1,19 +1,19 @@
 package com.flower.api.controller;
 
-import com.flower.cart.domain.Cart;
-import com.flower.cart.domain.CartItem;
-import com.flower.cart.domain.CartItemOption;
+import com.flower.cart.dto.CartDto;
+import com.flower.cart.dto.CartItemDto;
+import com.flower.cart.dto.CartItemOptionDto;
 import com.flower.cart.service.CartService;
 import com.flower.common.exception.EntityNotFoundException;
-import com.flower.order.domain.Order;
 import com.flower.order.dto.CreateOrderRequest;
+import com.flower.order.dto.CreateOrderResponse;
 import com.flower.order.dto.OrderItemDto;
 import com.flower.order.dto.OrderItemOptionDto;
 import com.flower.order.service.OrderService;
-import com.flower.product.domain.Product;
-import com.flower.product.domain.ProductAddon;
-import com.flower.product.domain.ProductOption;
+import com.flower.product.dto.ProductDto;
 import com.flower.product.service.ProductQueryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -32,74 +32,68 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
+@Tag(name = "Order", description = "주문 관리 API")
 public class OrderController {
 
     private final OrderService orderService;
     private final CartService cartService;
     private final ProductQueryService productQueryService;
 
+    @Operation(summary = "주문 생성", description = "장바구니에 담긴 상품으로 주문을 생성합니다.")
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestBody CreateOrderRequest request) {
-        log.info("Received order request for member: {}", request.getMemberId());
+    public ResponseEntity<CreateOrderResponse> createOrder(@RequestBody CreateOrderRequest request) {
+        log.info("Received order request for member: {}", request.memberId());
 
-        // 1. 장바구니 조회
-        Cart cart = cartService.getCartByMemberId(request.getMemberId());
+        // 1. 장바구니 조회 (DTO 사용)
+        CartDto cart = cartService.getCartDtoByMemberId(request.memberId());
         if (cart.isEmpty()) {
             throw new IllegalArgumentException("Cart is empty");
         }
 
         // 2. 주문 데이터 준비
-        // 상품명을 얻기 위해 상품 상세 정보 조회 (스냅샷)
-        List<Long> productIds = cart.getItems().stream()
-                .map(CartItem::getProductId)
+        List<Long> productIds = cart.items().stream()
+                .map(CartItemDto::productId)
                 .collect(Collectors.toList());
         
-        Map<Long, Product> productMap = productQueryService.getMapByIds(productIds);
+        // 상품 정보 조회 (DTO 사용)
+        Map<Long, ProductDto> productMap = productQueryService.getProductsMapByIds(productIds);
 
         List<OrderItemDto> orderItems = new ArrayList<>();
 
-        for (CartItem cartItem : cart.getItems()) {
-            Product product = productMap.get(cartItem.getProductId());
+        for (CartItemDto cartItem : cart.items()) {
+            ProductDto product = productMap.get(cartItem.productId());
             if (product == null) {
-                throw new EntityNotFoundException("Product not found: " + cartItem.getProductId());
+                throw new EntityNotFoundException("Product not found: " + cartItem.productId());
             }
 
             List<OrderItemOptionDto> optionDtos = new ArrayList<>();
-            for (CartItemOption option : cartItem.getOptions()) {
-                // 이상적으로는 여기서 옵션/추가상품 이름을 조회해야 함.
-                // MVP의 경우 ProductService를 통해 조회하거나 상품 탐색에 의존할 수 있음.
-                // ProductOption/Addon 엔티티가 Product 모듈에 있으므로 필요한 경우 ProductService를 통해 접근 가능.
-                // 하지만 CartItemOption은 ID만 가지고 있음.
-                
-                String optionName = "Option #" + (option.getProductOptionId() != null ? option.getProductOptionId() : option.getProductAddonId());
-                BigDecimal price = option.getPriceAdjustment();
-                
-                // TODO: ProductQueryService를 개선하여 ID로 옵션/추가상품 이름을 조회하도록 수정
-                // 현재는 임시 이름 사용.
+            for (CartItemOptionDto option : cartItem.options()) {
+                String optionName = "Option #" + (option.productOptionId() != null ? option.productOptionId() : option.productAddonId());
+                BigDecimal price = option.priceAdjustment();
                 
                 optionDtos.add(OrderItemOptionDto.builder()
-                        .productOptionId(option.getProductOptionId())
-                        .productAddonId(option.getProductAddonId())
+                        .productOptionId(option.productOptionId())
+                        .productAddonId(option.productAddonId())
                         .optionName(optionName) 
                         .price(price)
                         .build());
             }
 
             orderItems.add(OrderItemDto.builder()
-                    .productId(cartItem.getProductId())
-                    .productName(product.getName())
-                    .quantity(cartItem.getQuantity())
-                    .unitPrice(cartItem.getUnitPrice())
+                    .productId(cartItem.productId())
+                    .productName(product.name())
+                    .quantity(cartItem.quantity())
+                    .unitPrice(cartItem.unitPrice())
                     .options(optionDtos)
                     .build());
         }
 
-        // 3. 주문 생성
-        Order order = orderService.createOrder(request, orderItems);
+        // 3. 주문 생성 (DTO 반환)
+        CreateOrderResponse response = orderService.createOrder(request, orderItems);
 
         // 4. 장바구니 비우기
-        cartService.clearCart(cart.getCartKey());
+        cartService.clearCart(cart.cartKey());
 
-        return ResponseEntity.ok(order);
+        return ResponseEntity.ok(response);
     }
 }

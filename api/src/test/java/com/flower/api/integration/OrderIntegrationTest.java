@@ -1,8 +1,6 @@
 package com.flower.api.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flower.cart.domain.Cart;
-import com.flower.cart.port.out.CartRepository;
 import com.flower.cart.service.CartService;
 import com.flower.order.domain.Order;
 import com.flower.order.dto.CreateOrderRequest;
@@ -40,9 +38,6 @@ class OrderIntegrationTest {
     private CartService cartService;
 
     @Autowired
-    private CartRepository cartRepository;
-
-    @Autowired
     private ProductService productService;
 
     @Autowired
@@ -61,7 +56,7 @@ class OrderIntegrationTest {
                 .name("통합테스트 장미")
                 .productCode("INT-001")
                 .price(new BigDecimal("10000"))
-                .discountPrice(null) // null은 할인 없음을 의미
+                .discountPrice(null)
                 .stockQuantity(100)
                 .isActive(true)
                 .isAvailableToday(true)
@@ -74,19 +69,21 @@ class OrderIntegrationTest {
         Long memberId = 1L;
 
         cartService.addItem(cartKey, product.getId(), 2);
-        Cart cart = cartService.getCart(cartKey);
-        cart.setMemberId(memberId);
-        cartRepository.save(cart);
+        
+        // Entity 직접 조작 대신 Service 메서드 사용
+        cartService.assignMember(cartKey, memberId);
 
-        // 2. 요청 준비
-        CreateOrderRequest request = new CreateOrderRequest();
-        request.setMemberId(memberId);
-        request.setDeliveryMethod(Order.DeliveryMethod.SHIPPING);
-        request.setReservedAt(LocalDateTime.now().plusDays(3));
-        request.setMessageCard("생일 축하합니다!");
-        request.setDeliveryAddress("서울 강남구");
-        request.setDeliveryName("홍길동");
-        request.setDeliveryPhone("010-1234-5678");
+        // 2. 요청 준비 (Record 생성자 사용)
+        CreateOrderRequest request = new CreateOrderRequest(
+                memberId,
+                Order.DeliveryMethod.SHIPPING,
+                LocalDateTime.now().plusDays(3),
+                "생일 축하합니다!",
+                "서울 강남구",
+                "010-1234-5678",
+                "홍길동",
+                null // deliveryNote
+        );
 
         mockMvc.perform(post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)

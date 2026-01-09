@@ -5,6 +5,7 @@ import com.flower.order.domain.Order;
 import com.flower.order.domain.OrderItem;
 import com.flower.order.domain.OrderItemOption;
 import com.flower.order.dto.CreateOrderRequest;
+import com.flower.order.dto.CreateOrderResponse;
 import com.flower.order.dto.OrderItemDto;
 import com.flower.order.dto.OrderItemOptionDto;
 import com.flower.order.repository.OrderRepository;
@@ -15,33 +16,35 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public Order createOrder(CreateOrderRequest request, List<OrderItemDto> items) {
-        log.info("주문 생성 요청 - 회원 ID: {}", request.getMemberId());
+    public CreateOrderResponse createOrder(CreateOrderRequest request, List<OrderItemDto> orderItems) {
+        log.info("주문 생성 요청 - 회원 ID: {}", request.memberId());
 
         // 1. 주문 엔티티 생성
         Order order = Order.builder()
-                .memberId(request.getMemberId())
-                .deliveryMethod(request.getDeliveryMethod())
-                .reservedAt(request.getReservedAt())
-                .messageCard(request.getMessageCard())
-                .deliveryAddress(request.getDeliveryAddress())
-                .deliveryPhone(request.getDeliveryPhone())
-                .deliveryName(request.getDeliveryName())
-                .deliveryNote(request.getDeliveryNote())
+                .memberId(request.memberId())
+                .deliveryMethod(request.deliveryMethod())
+                .reservedAt(request.reservedAt())
+                .messageCard(request.messageCard())
+                .deliveryAddress(request.deliveryAddress())
+                .deliveryPhone(request.deliveryPhone())
+                .deliveryName(request.deliveryName())
+                .deliveryNote(request.deliveryNote())
                 .build();
 
-        // 2. 주문 상품 매핑
-        for (OrderItemDto itemDto : items) {
+        // 2. 주문 상품 추가
+        for (OrderItemDto itemDto : orderItems) {
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .productId(itemDto.getProductId())
@@ -62,23 +65,36 @@ public class OrderService {
                     orderItem.addOption(option);
                 }
             }
+            
+            // 총 가격은 엔티티 저장 시(@PrePersist) 또는 getTotalPrice() 호출 시 자동 계산됨
             order.addItem(orderItem);
         }
 
+        // 3. 총 금액 계산
         order.calculateTotal();
 
-        // 3. 주문 저장
+        // 4. 저장
         Order savedOrder = orderRepository.save(order);
+
+        // 5. 이벤트 데이터 준비
+        String itemSummary = savedOrder.getItems().stream()
+                .map(item -> item.getProductName() + " x " + item.getQuantity())
+                .collect(Collectors.joining(", "));
         
-        // 4. 이벤트 발행
+        int totalQuantity = savedOrder.getItems().stream()
+                .mapToInt(OrderItem::getQuantity)
+                .sum();
+
+        // 6. 이벤트 발행
         eventPublisher.publishEvent(new OrderPlacedEvent(
-                savedOrder.getId().toString(), 
-                "Order #" + savedOrder.getOrderNumber(), 
-                savedOrder.getItems().size(), 
-                savedOrder.getTotalAmount() != null ? savedOrder.getTotalAmount() : java.math.BigDecimal.ZERO
+                savedOrder.getOrderNumber(), // orderId (String)
+                itemSummary,                 // itemSummary
+                totalQuantity,               // totalQuantity
+                savedOrder.getTotalAmount()  // totalAmount
         ));
         
-        log.info("주문 생성 완료: {}", savedOrder.getOrderNumber());
-        return savedOrder;
+        log.info("주문 생성 완료 - 주문번호: {}", savedOrder.getOrderNumber());
+
+        return CreateOrderResponse.from(savedOrder);
     }
 }

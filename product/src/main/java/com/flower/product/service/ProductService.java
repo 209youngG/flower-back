@@ -5,6 +5,7 @@ import com.flower.product.domain.Product;
 import com.flower.product.domain.ProductAddon;
 import com.flower.product.domain.ProductCategory;
 import com.flower.product.domain.ProductOption;
+import com.flower.product.dto.ProductDto;
 import com.flower.product.repository.ProductAddonRepository;
 import com.flower.product.repository.ProductOptionRepository;
 import com.flower.product.repository.ProductRepository;
@@ -27,7 +28,6 @@ public class ProductService implements ProductQueryService {
     private final ProductOptionRepository productOptionRepository;
     private final ProductAddonRepository productAddonRepository;
 
-    @Override
     @Transactional(readOnly = true)
     public Product getById(Long productId) {
         return productRepository.findById(productId)
@@ -36,11 +36,22 @@ public class ProductService implements ProductQueryService {
 
     @Override
     @Transactional(readOnly = true)
+    public ProductDto getProductById(Long productId) {
+        return toDto(getById(productId));
+    }
+
+    @Transactional(readOnly = true)
     public List<Product> getByIds(List<Long> productIds) {
         return productRepository.findAllById(productIds);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Map<Long, ProductDto> getProductsMapByIds(List<Long> productIds) {
+        return getByIds(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, this::toDto));
+    }
+
     @Transactional(readOnly = true)
     public Map<Long, Product> getMapByIds(List<Long> productIds) {
         List<Product> products = getByIds(productIds);
@@ -53,83 +64,63 @@ public class ProductService implements ProductQueryService {
         return productRepository.existsById(productId);
     }
 
-    /**
-     * 상품 코드로 상품 조회
-     */
+    private ProductDto toDto(Product product) {
+        return new ProductDto(
+            product.getId(),
+            product.getName(),
+            product.getEffectivePrice(),
+            product.getIsActive(),
+            product.getIsAvailableToday()
+        );
+    }
+
     @Transactional(readOnly = true)
     public Product getProductByCode(String productCode) {
         return productRepository.findByProductCode(productCode)
                 .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다: " + productCode));
     }
 
-    /**
-     * 카테고리별 활성 상품 조회
-     */
     @Transactional(readOnly = true)
     public List<Product> getProductsByCategory(ProductCategory category) {
         return productRepository.findActiveProductsByCategoryOrderByTrending(category);
     }
 
-    /**
-     * 추천 상품 조회
-     */
     @Transactional(readOnly = true)
     public List<Product> getFeaturedProducts() {
         return productRepository.findFeaturedProducts();
     }
 
-    /**
-     * 인기 상품 조회
-     */
     @Transactional(readOnly = true)
     public List<Product> getTrendingProducts() {
         return productRepository.findTrendingProducts();
     }
 
-    /**
-     * 당일 배송 가능 상품 조회
-     */
     @Transactional(readOnly = true)
     public List<Product> getSameDayDeliveryProducts() {
         return productRepository.findSameDayDeliveryProducts();
     }
 
-    /**
-     * 키워드로 상품 검색
-     */
     @Transactional(readOnly = true)
     public List<Product> searchProducts(String keyword) {
         return productRepository.searchProducts(keyword);
     }
 
-    /**
-     * 구매 가능 상품 전체 조회 (재고 있음 & 활성 상태)
-     */
     @Transactional(readOnly = true)
     public List<Product> getAvailableProducts() {
         return productRepository.findAvailableProducts();
     }
 
-    /**
-     * 카테고리별 구매 가능 상품 조회
-     */
     @Transactional(readOnly = true)
     public List<Product> getAvailableProductsByCategory(ProductCategory category) {
         return productRepository.findAvailableProductsByCategory(category);
     }
 
-    /**
-     * 신규 상품 생성
-     */
     @Transactional
     public Product createProduct(Product product) {
         log.info("신규 상품 생성: {}", product.getName());
         return productRepository.save(product);
     }
 
-    /**
-     * 기존 상품 정보 수정
-     */
     @Transactional
     public Product updateProduct(Long productId, Product product) {
         Product existingProduct = getById(productId);
@@ -153,9 +144,6 @@ public class ProductService implements ProductQueryService {
         return productRepository.save(existingProduct);
     }
 
-    /**
-     * 상품 삭제 (활성 상태를 false로 변경하는 Soft Delete)
-     */
     @Transactional
     public void deleteProduct(Long productId) {
         Product product = getById(productId);
@@ -164,18 +152,12 @@ public class ProductService implements ProductQueryService {
         productRepository.save(product);
     }
 
-    /**
-     * 재고 충분 여부 확인
-     */
     @Transactional(readOnly = true)
     public boolean checkStock(Long productId, int quantity) {
         Product product = getById(productId);
         return product.hasSufficientStock(quantity);
     }
 
-    /**
-     * 재고 감소
-     */
     @Transactional
     public void decreaseStock(Long productId, int quantity) {
         Product product = getById(productId);
@@ -185,9 +167,6 @@ public class ProductService implements ProductQueryService {
                 product.getName(), quantity, product.getStockQuantity());
     }
 
-    /**
-     * 재고 증가
-     */
     @Transactional
     public void increaseStock(Long productId, int quantity) {
         Product product = getById(productId);
@@ -197,50 +176,32 @@ public class ProductService implements ProductQueryService {
                 product.getName(), quantity, product.getStockQuantity());
     }
 
-    /**
-     * 상품 옵션 목록 조회
-     */
     @Transactional(readOnly = true)
     public List<ProductOption> getProductOptions(Long productId) {
         return productOptionRepository.findByProductId(productId);
     }
 
-    /**
-     * 구매 가능 상품 옵션 조회
-     */
     @Transactional(readOnly = true)
     public List<ProductOption> getAvailableProductOptions(Long productId) {
         return productOptionRepository.findByProductIdAndIsAvailableOrderByDisplayOrderAsc(productId, true);
     }
 
-    /**
-     * 카테고리별 추가 상품 조회
-     */
     @Transactional(readOnly = true)
     public List<ProductAddon> getAddonsByCategory(ProductAddon.Category category) {
         return productAddonRepository.findByCategoryAndIsAvailableOrderByDisplayOrderAsc(category, true);
     }
 
-    /**
-     * 구매 가능 추가 상품 전체 조회
-     */
     @Transactional(readOnly = true)
     public List<ProductAddon> getAvailableAddons() {
         return productAddonRepository.findByIsAvailableOrderByDisplayOrderAsc(true);
     }
 
-    /**
-     * 신규 상품 옵션 생성
-     */
     @Transactional
     public ProductOption createProductOption(ProductOption option) {
         log.info("신규 상품 옵션 생성: {}", option.getValue());
         return productOptionRepository.save(option);
     }
 
-    /**
-     * 신규 추가 상품 생성
-     */
     @Transactional
     public ProductAddon createProductAddon(ProductAddon addon) {
         log.info("신규 추가 상품 생성: {}", addon.getName());
