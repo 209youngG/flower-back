@@ -1,0 +1,15 @@
+package com.flower.cart.adapter.out.persistence;
+
+import com.flower.cart.domain.Cart;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface CartJpaRepository extends JpaRepository<Cart, Long> {
+
+    Optional<Cart> findByCartKey(String cartKey);
+
+    Optional<Cart> findByMemberId(Long memberId);
+}
