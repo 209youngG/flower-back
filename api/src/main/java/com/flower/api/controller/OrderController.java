@@ -5,6 +5,7 @@ import com.flower.cart.dto.CartItemDto;
 import com.flower.cart.dto.CartItemOptionDto;
 import com.flower.cart.service.CartService;
 import com.flower.common.exception.EntityNotFoundException;
+import com.flower.order.dto.CreateDirectOrderRequest;
 import com.flower.order.dto.CreateOrderRequest;
 import com.flower.order.dto.CreateOrderResponse;
 import com.flower.order.dto.OrderItemDto;
@@ -96,4 +97,47 @@ public class OrderController {
 
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "다이렉트 상품 주문", description = "장바구니를 거치지 않고 바로 상품을 주문합니다.")
+    @PostMapping("/direct")
+    public ResponseEntity<CreateOrderResponse> createDirectOrder(@RequestBody CreateDirectOrderRequest request) {
+        log.info("Received direct order request for member: {}, product: {}", request.memberId(), request.productId());
+
+        // 1. 상품 정보 조회
+        ProductDto product = productQueryService.getProductById(request.productId());
+        
+        // 2. 주문 상품(OrderItem) 생성
+        List<OrderItemDto> orderItems = new ArrayList<>();
+        
+        // 옵션 처리 로직 (간소화: 옵션 ID만 있고 가격은 0으로 가정하거나 추가 조회 필요)
+        // MVP: 옵션 없이 상품만 주문한다고 가정하거나, 빈 옵션 리스트 사용
+        List<OrderItemOptionDto> options = new ArrayList<>();
+        // TODO: request.optionIds()를 통해 실제 옵션 정보를 조회하여 채워넣어야 함.
+
+        orderItems.add(OrderItemDto.builder()
+                .productId(product.id())
+                .productName(product.name())
+                .quantity(request.quantity())
+                .unitPrice(product.price())
+                .options(options)
+                .build());
+
+        // 3. CreateOrderRequest 변환 (공통 주문 로직 재사용)
+        CreateOrderRequest orderRequest = new CreateOrderRequest(
+                request.memberId(),
+                request.deliveryMethod(),
+                request.reservedAt(),
+                request.messageCard(),
+                request.deliveryAddress(),
+                request.deliveryPhone(),
+                request.deliveryName(),
+                request.deliveryNote()
+        );
+
+        // 4. 주문 생성
+        CreateOrderResponse response = orderService.createOrder(orderRequest, orderItems);
+
+        return ResponseEntity.ok(response);
+    }
+
 }
