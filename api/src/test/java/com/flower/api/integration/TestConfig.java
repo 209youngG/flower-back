@@ -26,8 +26,8 @@ import java.util.Properties;
 @ComponentScan(
     basePackages = "com.flower",
     excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\.flower\.order\.Main"),
-        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\.flower\.api\.Main")
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.flower\\.order\\.Main"),
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.flower\\.api\\.Main")
     }
 )
 @EnableJpaRepositories(basePackages = "com.flower")
