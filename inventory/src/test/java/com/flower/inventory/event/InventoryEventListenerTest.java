@@ -1,15 +1,18 @@
 package com.flower.inventory.event;
 
 import com.flower.common.event.OrderPlacedEvent;
+import com.flower.product.service.ProductService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.lang.reflect.Method;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.context.ApplicationEventPublisher;
+import java.math.BigDecimal;
+import java.util.List;
+import static org.mockito.Mockito.*;
 
 /**
  * InventoryEventListener 테스트
@@ -18,61 +21,69 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("InventoryEventListener Tests")
 class InventoryEventListenerTest {
 
+    @Mock
+    private ProductService productService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private InventoryEventListener inventoryEventListener;
 
     @Test
-    @DisplayName("Should handle OrderPlacedEvent")
-    void shouldHandleOrderPlacedEvent() {
+    @DisplayName("Should decrease stock when OrderPlacedEvent is received")
+    void shouldDecreaseStockWhenOrderPlacedEventIsReceived() {
+        // 준비
+        OrderPlacedEvent.OrderItemInfo item1 = new OrderPlacedEvent.OrderItemInfo(1L, "Rose", 2, new BigDecimal("10000"));
+        OrderPlacedEvent.OrderItemInfo item2 = new OrderPlacedEvent.OrderItemInfo(2L, "Lily", 3, new BigDecimal("8000"));
+        
+        OrderPlacedEvent event = new OrderPlacedEvent(
+                "ORD-001", 1L, "Rose x 2, Lily x 3", 5, new BigDecimal("44000"),
+                List.of(item1, item2), null
+        );
+
         // 실행
-        // 참고: handleOrderPlaced는 @Async 및 @EventListener 주석이 달려있으므로
-        // Spring 컨텍스트를 통해 테스트하거나 리플렉션을 사용해야 합니다.
-        // 여기서는 메서드 존재 여부와 주석을 검증합니다.
+        inventoryEventListener.handleOrderPlaced(event);
 
         // 검증
-        assertNotNull(inventoryEventListener);
+        verify(productService).decreaseStock(1L, 2);
+        verify(productService).decreaseStock(2L, 3);
+        verify(eventPublisher, never()).publishEvent(any());
     }
-
+    
     @Test
-    @DisplayName("Should have handleOrderPlaced method with TransactionalEventListener annotation")
-    void shouldHaveHandleOrderPlacedMethodWithTransactionalEventListenerAnnotation() throws NoSuchMethodException {
+    @DisplayName("Should publish failure event when stock deduction fails")
+    void shouldPublishFailureEventWhenStockDeductionFails() {
+        // 준비
+        OrderPlacedEvent.OrderItemInfo item1 = new OrderPlacedEvent.OrderItemInfo(1L, "Rose", 2, new BigDecimal("10000"));
+        OrderPlacedEvent event = new OrderPlacedEvent(
+                "ORD-FAIL", 1L, "Rose x 2", 2, new BigDecimal("20000"),
+                List.of(item1), null
+        );
+
+        doThrow(new RuntimeException("Out of stock")).when(productService).decreaseStock(1L, 2);
+
         // 실행
-        Method method = InventoryEventListener.class.getMethod("handleOrderPlaced", OrderPlacedEvent.class);
+        inventoryEventListener.handleOrderPlaced(event);
 
         // 검증
-        assertNotNull(method);
-        assertEquals("handleOrderPlaced", method.getName());
-        assertTrue(method.isAnnotationPresent(org.springframework.transaction.event.TransactionalEventListener.class));
+        verify(productService).decreaseStock(1L, 2);
+        verify(eventPublisher).publishEvent(any(com.flower.common.event.InventoryDeductionFailedEvent.class));
     }
-
+    
     @Test
-    @DisplayName("Should have Async annotation on handleOrderPlaced method")
-    void shouldHaveAsyncAnnotationOnHandleOrderPlacedMethod() throws NoSuchMethodException {
+    @DisplayName("Should log warning when items are missing")
+    void shouldLogWarningWhenItemsAreMissing() {
+        // 준비
+        OrderPlacedEvent event = new OrderPlacedEvent(
+                "ORD-002", 2L, "Unknown Item", 1, new BigDecimal("10000"),
+                null, null
+        );
+
         // 실행
-        Method method = InventoryEventListener.class.getMethod("handleOrderPlaced", OrderPlacedEvent.class);
+        inventoryEventListener.handleOrderPlaced(event);
 
         // 검증
-        assertTrue(method.isAnnotationPresent(org.springframework.scheduling.annotation.Async.class));
+        verify(productService, never()).decreaseStock(anyLong(), anyInt());
     }
-
-    @Test
-    @DisplayName("Should have TransactionalEventListener with AFTER_COMMIT phase")
-    void shouldHaveTransactionalEventListenerWithAfterCommitPhase() throws NoSuchMethodException {
-        // 실행
-        Method method = InventoryEventListener.class.getMethod("handleOrderPlaced", OrderPlacedEvent.class);
-
-        // 검증
-        assertTrue(method.isAnnotationPresent(org.springframework.transaction.event.TransactionalEventListener.class));
-        org.springframework.transaction.event.TransactionalEventListener annotation =
-                method.getAnnotation(org.springframework.transaction.event.TransactionalEventListener.class);
-        assertEquals(org.springframework.transaction.event.TransactionPhase.AFTER_COMMIT, annotation.phase());
-    }
-
-    @Test
-    @DisplayName("Should have Component annotation on class")
-    void shouldHaveComponentAnnotationOnClass() {
-        // 실행 및 검증
-        assertTrue(inventoryEventListener.getClass().isAnnotationPresent(org.springframework.stereotype.Component.class));
-    }
-
 }

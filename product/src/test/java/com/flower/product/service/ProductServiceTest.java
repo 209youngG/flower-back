@@ -56,7 +56,7 @@ class ProductServiceTest {
         when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
 
         // 실행
-        Product result = productService.getProductById(1L);
+        Product result = productService.getById(1L);
 
         // 검증
         assertThat(result).isNotNull();

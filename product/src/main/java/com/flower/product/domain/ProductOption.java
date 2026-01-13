@@ -32,7 +32,7 @@ public class ProductOption {
     private String name;  // 예: "사이즈", "배송 방법"
 
     @Column(nullable = false, length = 100)
-    private String value;  // 예: "S", "M", "L", "퀵배송", "택배"
+    private String optionValue;  // 예: "S", "M", "L", "퀵배송", "택배"
 
     @Column(name = "price_adjustment", precision = 10, scale = 2)
     private BigDecimal priceAdjustment;  // 이 옵션에 대한 추가 비용 또는 할인

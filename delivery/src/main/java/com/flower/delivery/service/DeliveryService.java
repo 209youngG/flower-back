@@ -20,15 +20,23 @@ public class DeliveryService {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleOrderPlaced(OrderPlacedEvent event) {
-        log.info("배송 생성 시작 - 주문 ID: {}", event.getOrderId());
+        log.info("배송 생성 시작 - 주문번호: {}", event.getOrderNumber());
         
         // 실제 시나리오에서는 주문 정보를 조회하여 배송 타입을 결정함
         // 현재는 기본 배송으로 가정
         
         Delivery delivery = Delivery.builder()
-                .orderId(Long.parseLong(event.getOrderId())) // 이벤트의 orderId는 String이지만 배송 엔티티는 Long을 가정
+                .orderId(event.getInternalOrderId())
+                .orderNumber(event.getOrderNumber())
                 .status(Delivery.DeliveryStatus.PENDING)
                 .build();
+        
+        if (event.getDeliveryInfo() != null) {
+            delivery.setReceiverName(event.getDeliveryInfo().getReceiverName());
+            delivery.setReceiverPhone(event.getDeliveryInfo().getPhone());
+            delivery.setAddress(event.getDeliveryInfo().getAddress());
+            delivery.setNote(event.getDeliveryInfo().getNote());
+        }
         
         deliveryRepository.save(delivery);
         log.info("배송 생성 완료: 배송ID={}", delivery.getId());

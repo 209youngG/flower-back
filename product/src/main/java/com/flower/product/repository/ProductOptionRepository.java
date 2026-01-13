@@ -25,7 +25,7 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption, Lo
     /**
      * 상품 및 배송 유형으로 옵션 조회
      */
-    List<ProductOption> findByProductIdAndValue(Long productId, String value);
+    List<ProductOption> findByProductIdAndOptionValue(Long productId, String optionValue);
 
     /**
      * 상품 ID로 사용 가능한 옵션 조회

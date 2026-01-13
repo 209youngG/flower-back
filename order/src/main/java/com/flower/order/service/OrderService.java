@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.flower.common.exception.EntityNotFoundException;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,16 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ApplicationEventPublisher eventPublisher;
+
+    @Transactional
+    public void cancelOrder(String orderNumber, String reason) {
+        log.info("주문 취소 요청 - 주문번호: {}, 사유: {}", orderNumber, reason);
+        Order order = orderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다: " + orderNumber));
+        
+        order.cancel();
+        log.info("주문 취소 완료 - 주문번호: {}", orderNumber);
+    }
 
     @Transactional
     public CreateOrderResponse createOrder(CreateOrderRequest request, List<OrderItemDto> orderItems) {
@@ -85,12 +97,31 @@ public class OrderService {
                 .mapToInt(OrderItem::getQuantity)
                 .sum();
 
+        List<OrderPlacedEvent.OrderItemInfo> itemInfos = savedOrder.getItems().stream()
+                .map(item -> new OrderPlacedEvent.OrderItemInfo(
+                        item.getProductId(),
+                        item.getProductName(),
+                        item.getQuantity(),
+                        item.getUnitPrice()
+                ))
+                .collect(Collectors.toList());
+
+        OrderPlacedEvent.DeliveryInfo deliveryInfo = new OrderPlacedEvent.DeliveryInfo(
+                savedOrder.getDeliveryName(),
+                savedOrder.getDeliveryPhone(),
+                savedOrder.getDeliveryAddress(),
+                savedOrder.getDeliveryNote()
+        );
+
         // 6. 이벤트 발행
         eventPublisher.publishEvent(new OrderPlacedEvent(
-                savedOrder.getOrderNumber(), // orderId (String)
-                itemSummary,                 // itemSummary
-                totalQuantity,               // totalQuantity
-                savedOrder.getTotalAmount()  // totalAmount
+                savedOrder.getOrderNumber(), // orderNumber (Business Key)
+                savedOrder.getId(),          // orderId (Internal ID)
+                itemSummary,
+                totalQuantity,
+                savedOrder.getTotalAmount(),
+                itemInfos,
+                deliveryInfo
         ));
         
         log.info("주문 생성 완료 - 주문번호: {}", savedOrder.getOrderNumber());

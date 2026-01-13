@@ -3,6 +3,7 @@ package com.flower.api.controller;
 import com.flower.product.domain.Product;
 import com.flower.product.dto.CreateProductRequest;
 import com.flower.product.dto.ProductDto;
+import com.flower.product.dto.RestockProductRequest;
 import com.flower.product.dto.UpdateProductRequest;
 import com.flower.product.service.ProductQueryService;
 import com.flower.product.service.ProductService;
@@ -73,5 +74,15 @@ public class ProductController {
     public ResponseEntity<ProductDto> getProduct(@PathVariable Long productId) {
         ProductDto product = productQueryService.getProductById(productId);
         return ResponseEntity.ok(product);
+    }
+
+    @Operation(summary = "상품 재고 입고", description = "상품의 재고를 증가시킵니다.")
+    @PostMapping("/{productId}/restock")
+    public ResponseEntity<ProductDto> restockProduct(
+            @PathVariable Long productId,
+            @RequestBody RestockProductRequest request) {
+        productService.increaseStock(productId, request.quantity());
+        ProductDto responseDto = productQueryService.getProductById(productId);
+        return ResponseEntity.ok(responseDto);
     }
 }

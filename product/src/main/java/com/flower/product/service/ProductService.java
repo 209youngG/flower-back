@@ -142,7 +142,7 @@ public class ProductService implements ProductQueryService {
                     .map(optRequest -> ProductOption.builder()
                             .product(savedProduct)
                             .name(optRequest.name())
-                            .value(optRequest.value())
+                            .optionValue(optRequest.value())
                             .priceAdjustment(optRequest.priceAdjustment())
                             .stockQuantity(optRequest.stockQuantity())
                             .displayOrder(optRequest.displayOrder())
@@ -239,7 +239,7 @@ public class ProductService implements ProductQueryService {
 
     @Transactional
     public ProductOption createProductOption(ProductOption option) {
-        log.info("신규 상품 옵션 생성: {}", option.getValue());
+        log.info("신규 상품 옵션 생성: {}", option.getOptionValue());
         return productOptionRepository.save(option);
     }
 

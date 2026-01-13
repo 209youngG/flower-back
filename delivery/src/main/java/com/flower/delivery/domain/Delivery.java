@@ -23,6 +23,21 @@ public class Delivery {
     @Column(name = "order_id", nullable = false, unique = true)
     private Long orderId;
 
+    @Column(name = "order_number", nullable = false, unique = true)
+    private String orderNumber;
+
+    @Column(name = "receiver_name")
+    private String receiverName;
+
+    @Column(name = "receiver_phone")
+    private String receiverPhone;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "note")
+    private String note;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private DeliveryStatus status;
