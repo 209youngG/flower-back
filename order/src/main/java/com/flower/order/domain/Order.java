@@ -43,7 +43,7 @@ public class Order {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private OrderStatus status = OrderStatus.PENDING;
+    private OrderStatus status = OrderStatus.PENDING_PAYMENT;
 
     @Column(name = "payment_status", nullable = false, length = 20)
     @Builder.Default
@@ -136,10 +136,6 @@ public class Order {
     public void cancel() {
         this.cancelledAt = LocalDateTime.now();
         this.status = OrderStatus.CANCELLED;
-    }
-
-    public enum OrderStatus {
-        PENDING, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED
     }
 
     public enum PaymentStatus {

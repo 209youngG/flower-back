@@ -4,6 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "회원 가입 요청")
 public record RegisterMemberRequest(
+    @Schema(description = "로그인 ID", example = "user123")
+    String loginId,
+
     @Schema(description = "이메일", example = "user@example.com")
     String email,
 

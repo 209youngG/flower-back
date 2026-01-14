@@ -14,6 +14,11 @@ import java.util.Optional;
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
     /**
+     * 로그인 ID로 회원을 조회합니다.
+     */
+    Optional<Member> findByLoginId(String loginId);
+
+    /**
      * 이메일 주소로 회원을 조회합니다.
      */
     Optional<Member> findByEmail(String email);
@@ -22,6 +27,11 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
      * 전화번호로 회원을 조회합니다.
      */
     Optional<Member> findByPhoneNumber(String phoneNumber);
+
+    /**
+     * 로그인 ID 존재 여부를 확인합니다.
+     */
+    boolean existsByLoginId(String loginId);
 
     /**
      * 이메일 존재 여부를 확인합니다.

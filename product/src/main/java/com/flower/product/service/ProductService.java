@@ -79,6 +79,8 @@ public class ProductService implements ProductQueryService {
             product.getId(),
             product.getName(),
             product.getEffectivePrice(),
+            product.getStockQuantity(),
+            product.getThumbnailUrl(),
             product.getIsActive(),
             product.getIsAvailableToday()
         );

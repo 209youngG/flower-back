@@ -1,7 +1,9 @@
 package com.flower.inventory.event;
 
 import com.flower.common.event.InventoryDeductionFailedEvent;
+import com.flower.common.event.OrderCancelledEvent;
 import com.flower.common.event.OrderPlacedEvent;
+import com.flower.common.event.PaymentCompletedEvent;
 import com.flower.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +22,13 @@ public class InventoryEventListener {
     private final ApplicationEventPublisher eventPublisher;
 
     /**
-     * 주문 완료 이벤트 처리
+     * 결제 완료 이벤트 처리 (재고 차감)
      * 트랜잭션 커밋 후 비동기로 실행됨
      */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleOrderPlaced(OrderPlacedEvent event) {
-        log.info("주문 완료 이벤트 수신: 주문ID={}, 상품={}, 수량={}",
-                event.getOrderNumber(), event.getItemSummary(), event.getTotalQuantity());
+    public void handlePaymentCompleted(PaymentCompletedEvent event) {
+        log.info("결제 완료 이벤트 수신 - 재고 차감 시작: 주문ID={}", event.getOrderNumber());
 
         if (event.getItems() != null) {
             try {
@@ -46,5 +47,19 @@ public class InventoryEventListener {
     private void decreaseStock(Long productId, int quantity) {
         log.info("재고 차감 실행: 상품ID={}, 수량={}", productId, quantity);
         productService.decreaseStock(productId, quantity);
+    }
+
+    /**
+     * 주문 취소 이벤트 처리 (재고 복구)
+     */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleOrderCancelled(OrderCancelledEvent event) {
+        log.info("주문 취소 이벤트 수신 - 재고 복구 시작: 주문ID={}", event.getOrderNumber());
+        if (event.getItems() != null) {
+            for (OrderPlacedEvent.OrderItemInfo item : event.getItems()) {
+                productService.increaseStock(item.getProductId(), item.getQuantity());
+            }
+        }
     }
 }

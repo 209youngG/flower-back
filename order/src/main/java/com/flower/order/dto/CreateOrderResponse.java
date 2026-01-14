@@ -1,6 +1,7 @@
 package com.flower.order.dto;
 
 import com.flower.order.domain.Order;
+import com.flower.order.domain.OrderStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -8,14 +9,17 @@ import java.time.LocalDateTime;
 
 @Schema(description = "주문 생성 응답 DTO")
 public record CreateOrderResponse(
+    @Schema(description = "주문 ID", example = "1")
+    Long id,
+
     @Schema(description = "주문 번호", example = "ORD-123456789")
     String orderNumber,
     
     @Schema(description = "총 주문 금액", example = "50000")
     BigDecimal totalAmount,
     
-    @Schema(description = "주문 상태", example = "PENDING")
-    Order.OrderStatus status,
+    @Schema(description = "주문 상태", example = "PENDING_PAYMENT")
+    OrderStatus status,
     
     @Schema(description = "주문 생성 일시")
     LocalDateTime createdAt,
@@ -25,6 +29,7 @@ public record CreateOrderResponse(
 ) {
     public static CreateOrderResponse from(Order order) {
         return new CreateOrderResponse(
+            order.getId(),
             order.getOrderNumber(),
             order.getTotalAmount(),
             order.getStatus(),

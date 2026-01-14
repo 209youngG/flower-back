@@ -34,10 +34,13 @@ public class SecurityConfig {
                 // 상품 조회는 누구나 가능
                 .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                 
-                // 상품 관리(등록/수정/삭제)는 ADMIN만 가능
-                .requestMatchers(HttpMethod.POST, "/api/v1/products/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/v1/products/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/v1/products/**").hasRole("ADMIN")
+                // 상품 관리(등록/수정/삭제)는 ROOT_ADMIN 또는 PRODUCT_ADMIN 가능
+                .requestMatchers(HttpMethod.POST, "/api/v1/products/**").hasAnyRole("ROOT_ADMIN", "PRODUCT_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/products/**").hasAnyRole("ROOT_ADMIN", "PRODUCT_ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/products/**").hasAnyRole("ROOT_ADMIN", "PRODUCT_ADMIN")
+                
+                // 배송 관리
+                .requestMatchers(HttpMethod.PUT, "/api/v1/deliveries/**").hasAnyRole("ROOT_ADMIN", "DELIVERY_ADMIN")
                 
                 // Swagger UI 허용
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

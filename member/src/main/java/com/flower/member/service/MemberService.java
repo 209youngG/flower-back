@@ -28,11 +28,14 @@ public class MemberService {
      * 신규 회원 가입
      */
     @Transactional
-    public Member register(String email, String password, String phoneNumber, String name) {
-        // 이메일 중복 확인
-        if (memberRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("이미 등록된 이메일입니다: " + email);
+    public Member register(String loginId, String email, String password, String phoneNumber, String name) {
+        // 로그인 ID 중복 확인
+        if (memberRepository.existsByLoginId(loginId)) {
+            throw new IllegalArgumentException("이미 사용 중인 아이디입니다: " + loginId);
         }
+
+        // 이메일 중복 확인 (필요시)
+        // if (memberRepository.existsByEmail(email)) { ... }
 
         // 전화번호 중복 확인
         if (memberRepository.existsByPhoneNumber(phoneNumber)) {
@@ -41,6 +44,7 @@ public class MemberService {
 
         // 회원 생성
         Member member = Member.builder()
+                .loginId(loginId)
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .phoneNumber(phoneNumber)
@@ -51,7 +55,7 @@ public class MemberService {
 
         member = memberRepository.save(member);
 
-        log.info("신규 회원 가입 완료: 이메일={}, 전화번호={}", email, phoneNumber);
+        log.info("신규 회원 가입 완료: ID={}, 이름={}", loginId, name);
 
         eventPublisher.publishEvent(new MemberRegisteredEvent(member.getId(), email, name));
 
@@ -61,10 +65,10 @@ public class MemberService {
     /**
      * 회원 로그인 (자격 증명이 유효한 경우 회원 정보 반환)
      */
-    public Member login(String email, String password) {
-        return memberRepository.findByEmail(email)
+    public Member login(String loginId, String password) {
+        return memberRepository.findByLoginId(loginId)
                 .filter(member -> passwordEncoder.matches(password, member.getPassword()))
-                .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 일치하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다."));
     }
 
     /**

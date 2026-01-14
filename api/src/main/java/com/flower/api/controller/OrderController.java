@@ -8,6 +8,8 @@ import com.flower.common.exception.EntityNotFoundException;
 import com.flower.order.dto.CreateDirectOrderRequest;
 import com.flower.order.dto.CreateOrderRequest;
 import com.flower.order.dto.CreateOrderResponse;
+import com.flower.order.dto.OrderDetailDto;
+import com.flower.order.dto.OrderDto;
 import com.flower.order.dto.OrderItemDto;
 import com.flower.order.dto.OrderItemOptionDto;
 import com.flower.order.service.OrderService;
@@ -18,10 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -140,4 +139,15 @@ public class OrderController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "내 주문 목록 조회", description = "회원의 주문 내역을 조회합니다.")
+    @GetMapping("/my")
+    public ResponseEntity<List<OrderDto>> getMyOrders(@RequestParam Long memberId) {
+        return ResponseEntity.ok(orderService.getOrdersByMemberId(memberId));
+    }
+
+    @Operation(summary = "주문 상세 조회", description = "주문 ID로 상세 정보를 조회합니다.")
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderDetailDto> getOrderDetail(@PathVariable Long orderId) {
+        return ResponseEntity.ok(orderService.getOrderDetail(orderId));
+    }
 }

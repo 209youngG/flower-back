@@ -26,21 +26,24 @@ public class MemberController {
     @Operation(summary = "회원 가입", description = "신규 회원을 등록합니다.")
     @PostMapping("/register")
     public ResponseEntity<MemberDto> register(@RequestBody RegisterMemberRequest request) {
+        String loginId = request.loginId() != null ? request.loginId() : request.email();
+        
         Member member = memberService.register(
+                loginId,
                 request.email(),
                 request.password(),
                 request.phoneNumber(),
                 request.name()
         );
-        String token = jwtTokenProvider.createToken(member.getEmail(), member.getRole().name());
+        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
         return ResponseEntity.ok(toDto(member, token));
     }
 
-    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인합니다.")
+    @Operation(summary = "로그인", description = "아이디와 비밀번호로 로그인합니다.")
     @PostMapping("/login")
     public ResponseEntity<MemberDto> login(@RequestBody LoginRequest request) {
-        Member member = memberService.login(request.email(), request.password());
-        String token = jwtTokenProvider.createToken(member.getEmail(), member.getRole().name());
+        Member member = memberService.login(request.loginId(), request.password());
+        String token = jwtTokenProvider.createToken(member.getLoginId(), member.getRole().name());
         return ResponseEntity.ok(toDto(member, token));
     }
 

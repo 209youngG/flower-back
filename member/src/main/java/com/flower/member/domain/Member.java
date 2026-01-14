@@ -27,7 +27,10 @@ public class Member {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(name = "login_id", nullable = false, unique = true, length = 50)
+    private String loginId;
+
+    @Column(nullable = false, length = 100)
     private String email;
 
     @Column(nullable = false, length = 255)

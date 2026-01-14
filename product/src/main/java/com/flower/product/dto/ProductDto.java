@@ -6,6 +6,8 @@ public record ProductDto(
     Long id,
     String name,
     BigDecimal price,
+    Integer stockQuantity,
+    String thumbnailUrl,
     boolean isActive,
     boolean isAvailableToday
 ) {}

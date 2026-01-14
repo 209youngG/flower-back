@@ -1,5 +1,5 @@
 package com.flower.member.domain;
 
 public enum MemberRole {
-    USER, ADMIN
+    USER, PRODUCT_ADMIN, DELIVERY_ADMIN, ROOT_ADMIN
 }
