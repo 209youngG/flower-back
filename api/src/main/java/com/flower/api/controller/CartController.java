@@ -25,6 +25,7 @@ public class CartController {
     public ResponseEntity<Void> addItem(@RequestBody AddCartItemRequest request) {
         String cartKey = "cart-user-" + request.memberId(); // 임시 카트 키 생성 로직 (실제로는 세션/토큰 기반)
         cartService.addItem(cartKey, request.productId(), request.quantity());
+        cartService.assignMember(cartKey, request.memberId());
         return ResponseEntity.ok().build();
     }
 

@@ -66,6 +66,14 @@ public class ProductService implements ProductQueryService {
         return productRepository.existsById(productId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductDto> getAllProducts() {
+        return productRepository.findAll().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     private ProductDto toDto(Product product) {
         return new ProductDto(
             product.getId(),

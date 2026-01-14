@@ -12,4 +12,6 @@ public interface ProductQueryService {
     Map<Long, ProductDto> getProductsMapByIds(List<Long> productIds);
 
     boolean existsById(Long productId);
+
+    List<ProductDto> getAllProducts();
 }

@@ -43,15 +43,28 @@ public class CartService {
                 .orElseThrow(() -> new EntityNotFoundException("해당 키의 장바구니를 찾을 수 없습니다: " + cartKey));
     }
 
+    @Transactional
+    public Cart getOrCreateCartByMemberId(Long memberId) {
+        return cartRepository.findByMemberId(memberId)
+                .orElseGet(() -> {
+                    String cartKey = "cart-user-" + memberId;
+                    Cart newCart = Cart.builder()
+                            .cartKey(cartKey)
+                            .memberId(memberId)
+                            .build();
+                    return cartRepository.save(newCart);
+                });
+    }
+
     @Transactional(readOnly = true)
     public Cart getCartByMemberId(Long memberId) {
         return cartRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 회원의 장바구니를 찾을 수 없습니다: " + memberId));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CartDto getCartDtoByMemberId(Long memberId) {
-        Cart cart = getCartByMemberId(memberId);
+        Cart cart = getOrCreateCartByMemberId(memberId);
         return toDto(cart);
     }
 
@@ -117,6 +130,7 @@ public class CartService {
 
     private CartItemDto toItemDto(CartItem item) {
         return new CartItemDto(
+            item.getId(),
             item.getProductId(),
             item.getQuantity(),
             item.getUnitPrice(),

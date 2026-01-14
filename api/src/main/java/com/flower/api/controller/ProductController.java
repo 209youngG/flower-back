@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -34,6 +35,13 @@ public class ProductController {
         ProductDto responseDto = productQueryService.getProductById(savedProduct.getId());
         
         return ResponseEntity.created(URI.create("/api/v1/products/" + savedProduct.getId())).body(responseDto);
+    }
+
+    @Operation(summary = "전체 상품 목록 조회", description = "등록된 모든 상품 목록을 조회합니다.")
+    @GetMapping
+    public ResponseEntity<List<ProductDto>> getAllProducts() {
+        List<ProductDto> products = productQueryService.getAllProducts();
+        return ResponseEntity.ok(products);
     }
 
     @Operation(summary = "상품 수정", description = "기존 상품 정보를 수정합니다.")
