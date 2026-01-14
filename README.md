@@ -36,7 +36,13 @@ Spring Boot 4.0.0과 Java 25를 기반으로 한 꽃 쇼핑몰 백엔드 프로�
     - 새로운 도메인의 재시도 로직이 추가되더라도 스케줄러 코드를 수정할 필요 없이 `RetryStrategy` 구현체만 추가하면 됩니다.
 - **DIP (의존 역전 원칙)**: 모듈 간 통신은 구체적인 클래스가 아닌 추상화된 `Event`와 인터페이스를 통해 이루어집니다.
 
-### 4. 최신 기술 스택
+### 4. 보안 (Security)
+- **JWT Authentication**: Spring Security와 JWT를 이용한 토큰 기반 인증.
+- **Role-Based Access Control**:
+    - 일반 회원: 상품 조회, 장바구니, 주문 가능.
+    - 관리자(ADMIN): 상품 등록/수정/삭제 가능 (`/api/v1/products/**` CUD).
+
+### 5. 최신 기술 스택
 - **Java**: 25 (최신 LTS 기능 활용)
 - **Framework**: Spring Boot 4.0.0
 - **Build**: Gradle 9.2.1 (Groovy DSL)
@@ -46,7 +52,7 @@ Spring Boot 4.0.0과 Java 25를 기반으로 한 꽃 쇼핑몰 백엔드 프로�
 
 ### 회원 관리
 - **회원 가입/로그인**: 이메일 기반 인증 및 비밀번호 암호화 저장.
-- **포인트**: 가입 시 기본 등급 부여 및 포인트 적립/사용.
+- **JWT 토큰 발급**: 로그인 성공 시 Access Token 반환.
 
 ### 주문 프로세스
 1. **주문 생성**: 사용자가 주문을 요청하면 `Order` 엔티티가 생성되고 `OrderPlacedEvent`가 발행됩니다.
@@ -83,6 +89,7 @@ Spring Boot 4.0.0과 Java 25를 기반으로 한 꽃 쇼핑몰 백엔드 프로�
 ./gradlew :batch:bootRun
 ```
 - 실패한 보상 트랜잭션을 1분 주기로 재시도합니다.
+- API 서버와 동일한 H2 DB 파일(`flowerdb`)을 공유합니다.
 
 ## 📁 디렉토리 구조
 ```

@@ -47,6 +47,11 @@ public class Member {
     @Column(nullable = false, length = 20)
     private MemberGrade grade = MemberGrade.BRONZE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private MemberRole role = MemberRole.USER;
+
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Address> addresses = new ArrayList<>();

@@ -1,6 +1,7 @@
 package com.flower.member.dto;
 
 import com.flower.member.domain.MemberGrade;
+import com.flower.member.domain.MemberRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -23,5 +24,11 @@ public record MemberDto(
     BigDecimal pointBalance,
 
     @Schema(description = "회원 등급", example = "BRONZE")
-    MemberGrade grade
+    MemberGrade grade,
+
+    @Schema(description = "권한", example = "USER")
+    MemberRole role,
+
+    @Schema(description = "인증 토큰")
+    String token
 ) {}
