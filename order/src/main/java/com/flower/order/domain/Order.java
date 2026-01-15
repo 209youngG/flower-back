@@ -43,7 +43,7 @@ public class Order {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    private OrderStatus status = OrderStatus.PENDING_PAYMENT;
+    private OrderStatus status = OrderStatus.PENDING;
 
     @Column(name = "payment_status", nullable = false, length = 20)
     @Builder.Default

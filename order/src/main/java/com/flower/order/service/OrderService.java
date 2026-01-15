@@ -1,6 +1,7 @@
 package com.flower.order.service;
 
 import com.flower.common.event.OrderPlacedEvent;
+import com.flower.common.event.OrderCancelledEvent;
 import com.flower.order.domain.Order;
 import com.flower.order.domain.OrderItem;
 import com.flower.order.domain.OrderItemOption;
@@ -36,6 +37,15 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다: " + orderId));
         order.markAsPaid();
+        order.setStatus(com.flower.order.domain.OrderStatus.PAID); // 결제 완료 시 상태 변경
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void markAsRefunded(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다: " + orderId));
+        order.setPaymentStatus(com.flower.order.domain.Order.PaymentStatus.REFUNDED);
         orderRepository.save(order);
     }
 
@@ -48,10 +58,6 @@ public class OrderService {
         order.cancel();
         log.info("주문 취소 완료 - 주문번호: {}", orderNumber);
     }
-
-import com.flower.common.event.OrderCancelledEvent; // 추가
-
-// ...
 
     @Transactional
     public void cancelOrderById(Long orderId) {
@@ -76,6 +82,7 @@ import com.flower.common.event.OrderCancelledEvent; // 추가
         
         eventPublisher.publishEvent(new OrderCancelledEvent(
                 order.getOrderNumber(),
+                order.getId(), // orderId 주입
                 "사용자 취소",
                 order.getMemberId(),
                 items

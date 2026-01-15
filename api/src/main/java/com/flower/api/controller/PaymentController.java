@@ -1,7 +1,7 @@
 package com.flower.api.controller;
 
 import com.flower.api.dto.PaymentRequest;
-import com.flower.api.service.PaymentService;
+import com.flower.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

@@ -8,6 +8,7 @@ import com.flower.product.domain.ProductOption;
 import com.flower.product.dto.CreateProductOptionRequest;
 import com.flower.product.dto.CreateProductRequest;
 import com.flower.product.dto.ProductDto;
+import com.flower.product.dto.ProductOptionDto;
 import com.flower.product.repository.ProductAddonRepository;
 import com.flower.product.repository.ProductOptionRepository;
 import com.flower.product.repository.ProductRepository;
@@ -225,6 +226,22 @@ public class ProductService implements ProductQueryService {
         productRepository.save(product);
         log.info("상품 재고 증가: {} - 수량: {}, 남은재고: {}",
                 product.getName(), quantity, product.getStockQuantity());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductOptionDto> getOptionsByIds(List<Long> optionIds) {
+        if (optionIds == null || optionIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return productOptionRepository.findAllById(optionIds).stream()
+            .map(opt -> new ProductOptionDto(
+                opt.getId(),
+                opt.getName(),
+                opt.getOptionValue(),
+                opt.getPriceAdjustment()
+            ))
+            .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

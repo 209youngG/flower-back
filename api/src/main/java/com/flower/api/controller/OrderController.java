@@ -14,6 +14,7 @@ import com.flower.order.dto.OrderItemDto;
 import com.flower.order.dto.OrderItemOptionDto;
 import com.flower.order.service.OrderService;
 import com.flower.product.dto.ProductDto;
+import com.flower.product.dto.ProductOptionDto;
 import com.flower.product.service.ProductQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -108,10 +109,18 @@ public class OrderController {
         // 2. 주문 상품(OrderItem) 생성
         List<OrderItemDto> orderItems = new ArrayList<>();
         
-        // 옵션 처리 로직 (간소화: 옵션 ID만 있고 가격은 0으로 가정하거나 추가 조회 필요)
-        // MVP: 옵션 없이 상품만 주문한다고 가정하거나, 빈 옵션 리스트 사용
         List<OrderItemOptionDto> options = new ArrayList<>();
-        // TODO: request.optionIds()를 통해 실제 옵션 정보를 조회하여 채워넣어야 함.
+        if (request.optionIds() != null && !request.optionIds().isEmpty()) {
+            List<ProductOptionDto> productOptions = productQueryService.getOptionsByIds(request.optionIds());
+            for (ProductOptionDto opt : productOptions) {
+                 String optionName = opt.name() + ": " + opt.optionValue();
+                 options.add(OrderItemOptionDto.builder()
+                     .productOptionId(opt.id())
+                     .optionName(optionName)
+                     .price(opt.priceAdjustment())
+                     .build());
+            }
+        }
 
         orderItems.add(OrderItemDto.builder()
                 .productId(product.id())
@@ -149,5 +158,12 @@ public class OrderController {
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderDetailDto> getOrderDetail(@PathVariable Long orderId) {
         return ResponseEntity.ok(orderService.getOrderDetail(orderId));
+    }
+
+    @Operation(summary = "주문 취소", description = "주문을 취소합니다.")
+    @PostMapping("/{orderId}/cancel")
+    public ResponseEntity<Void> cancelOrder(@PathVariable Long orderId) {
+        orderService.cancelOrderById(orderId);
+        return ResponseEntity.ok().build();
     }
 }
