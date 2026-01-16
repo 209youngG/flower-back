@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 
+import java.util.List;
+
 @Schema(description = "상품 수정 요청")
 public record UpdateProductRequest(
     @Schema(description = "상품명")
@@ -36,5 +38,8 @@ public record UpdateProductRequest(
     Boolean isAvailableToday,
 
     @Schema(description = "대표 이미지 URL")
-    String thumbnailUrl
+    String thumbnailUrl,
+
+    @Schema(description = "상품 옵션 목록")
+    List<CreateProductOptionRequest> options
 ) {}

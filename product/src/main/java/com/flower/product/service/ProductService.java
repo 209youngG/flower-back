@@ -5,10 +5,7 @@ import com.flower.product.domain.Product;
 import com.flower.product.domain.ProductAddon;
 import com.flower.product.domain.ProductCategory;
 import com.flower.product.domain.ProductOption;
-import com.flower.product.dto.CreateProductOptionRequest;
-import com.flower.product.dto.CreateProductRequest;
-import com.flower.product.dto.ProductDto;
-import com.flower.product.dto.ProductOptionDto;
+import com.flower.product.dto.*;
 import com.flower.product.repository.ProductAddonRepository;
 import com.flower.product.repository.ProductOptionRepository;
 import com.flower.product.repository.ProductRepository;
@@ -76,6 +73,15 @@ public class ProductService implements ProductQueryService {
     }
 
     private ProductDto toDto(Product product) {
+        List<ProductOptionDto> optionDtos = product.getOptions().stream()
+                .map(opt -> new ProductOptionDto(
+                        opt.getId(),
+                        opt.getName(),
+                        opt.getOptionValue(),
+                        opt.getPriceAdjustment()
+                ))
+                .collect(Collectors.toList());
+
         return new ProductDto(
             product.getId(),
             product.getName(),
@@ -83,7 +89,10 @@ public class ProductService implements ProductQueryService {
             product.getStockQuantity(),
             product.getThumbnailUrl(),
             product.getIsActive(),
-            product.getIsAvailableToday()
+            product.getIsAvailableToday(),
+            optionDtos,
+            product.getCategory(),
+            product.getDeliveryType()
         );
     }
 
@@ -174,26 +183,45 @@ public class ProductService implements ProductQueryService {
     }
 
     @Transactional
-    public Product updateProduct(Long productId, Product product) {
+    public Product updateProduct(Long productId, UpdateProductRequest request) {
         Product existingProduct = getById(productId);
 
         log.info("상품 정보 수정: {}", existingProduct.getName());
 
-        existingProduct.setName(product.getName());
-        existingProduct.setDescription(product.getDescription());
-        existingProduct.setPrice(product.getPrice());
-        existingProduct.setDiscountPrice(product.getDiscountPrice());
-        existingProduct.setStockQuantity(product.getStockQuantity());
-        existingProduct.setMinOrderQuantity(product.getMinOrderQuantity());
-        existingProduct.setMaxOrderQuantity(product.getMaxOrderQuantity());
-        existingProduct.setCategory(product.getCategory());
-        existingProduct.setIsActive(product.getIsActive());
-        existingProduct.setIsFeatured(product.getIsFeatured());
-        existingProduct.setIsTrending(product.getIsTrending());
-        existingProduct.setIsAvailableToday(product.getIsAvailableToday());
-        existingProduct.setThumbnailUrl(product.getThumbnailUrl());
+        existingProduct.setName(request.name());
+        existingProduct.setDescription(request.description());
+        existingProduct.setPrice(request.price());
+        existingProduct.setDiscountPrice(request.discountPrice());
+        existingProduct.setStockQuantity(request.stockQuantity());
+        existingProduct.setCategory(request.category());
+        existingProduct.setIsActive(request.isActive());
+        existingProduct.setIsAvailableToday(request.isAvailableToday());
+        existingProduct.setThumbnailUrl(request.thumbnailUrl());
+        existingProduct.setDeliveryType(request.deliveryType());
+
+        if (request.options() != null) {
+            existingProduct.getOptions().clear();
+            
+            for (CreateProductOptionRequest optReq : request.options()) {
+                ProductOption option = ProductOption.builder()
+                        .product(existingProduct)
+                        .name(optReq.name())
+                        .optionValue(optReq.value())
+                        .priceAdjustment(optReq.priceAdjustment())
+                        .stockQuantity(optReq.stockQuantity())
+                        .displayOrder(optReq.displayOrder())
+                        .isAvailable(true)
+                        .build();
+                existingProduct.getOptions().add(option);
+            }
+        }
 
         return productRepository.save(existingProduct);
+    }
+    
+    @Transactional
+    public Product updateProduct(Long productId, Product product) {
+         return productRepository.save(product);
     }
 
     @Transactional

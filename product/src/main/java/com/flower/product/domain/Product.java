@@ -89,6 +89,10 @@ public class Product {
     @Builder.Default
     private List<ProductImage> images = new ArrayList<>();
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ProductOption> options = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

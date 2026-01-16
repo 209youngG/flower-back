@@ -85,6 +85,10 @@ public class CartItem {
     public void removeOption(CartItemOption option) {
         options.remove(option);
     }
+    
+    public void clearOptions() {
+        options.clear();
+    }
 
     public BigDecimal calculateTotalPrice(ProductInfo productInfo) {
         BigDecimal total = productInfo.getEffectivePrice().multiply(new BigDecimal(quantity));

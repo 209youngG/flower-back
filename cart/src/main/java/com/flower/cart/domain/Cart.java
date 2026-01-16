@@ -120,7 +120,7 @@ public class Cart {
         return items.size();
     }
 
-    private void calculateTotals() {
+    public void calculateTotals() {
         this.totalQuantity = items.stream()
                 .mapToInt(CartItem::getQuantity)
                 .sum();

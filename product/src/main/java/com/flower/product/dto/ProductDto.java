@@ -2,6 +2,10 @@ package com.flower.product.dto;
 
 import java.math.BigDecimal;
 
+import java.util.List;
+import com.flower.product.domain.Product.DeliveryType;
+import com.flower.product.domain.ProductCategory;
+
 public record ProductDto(
     Long id,
     String name,
@@ -9,5 +13,8 @@ public record ProductDto(
     Integer stockQuantity,
     String thumbnailUrl,
     boolean isActive,
-    boolean isAvailableToday
+    boolean isAvailableToday,
+    List<ProductOptionDto> options,
+    ProductCategory category,
+    DeliveryType deliveryType
 ) {}

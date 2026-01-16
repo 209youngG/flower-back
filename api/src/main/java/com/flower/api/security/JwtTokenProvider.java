@@ -61,6 +61,7 @@ public class JwtTokenProvider {
 
         Collection<? extends SimpleGrantedAuthority> authorities =
                 Arrays.stream(new String[]{claims.get("role").toString()})
+                        .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 

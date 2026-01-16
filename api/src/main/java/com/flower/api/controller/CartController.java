@@ -24,7 +24,7 @@ public class CartController {
     @PostMapping("/items")
     public ResponseEntity<Void> addItem(@RequestBody AddCartItemRequest request) {
         String cartKey = "cart-user-" + request.memberId(); // 임시 카트 키 생성 로직 (실제로는 세션/토큰 기반)
-        cartService.addItem(cartKey, request.productId(), request.quantity());
+        cartService.addItem(cartKey, request.productId(), request.quantity(), request.optionIds());
         cartService.assignMember(cartKey, request.memberId());
         return ResponseEntity.ok().build();
     }
@@ -44,6 +44,17 @@ public class CartController {
             @RequestBody UpdateCartItemRequest request) {
         String cartKey = "cart-user-" + memberId;
         cartService.updateItemQuantity(cartKey, itemId, request.quantity());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "장바구니 상품 옵션 수정", description = "장바구니 아이템의 옵션을 변경합니다.")
+    @PatchMapping("/items/{itemId}/options")
+    public ResponseEntity<Void> updateItemOptions(
+            @RequestParam Long memberId,
+            @PathVariable Long itemId,
+            @RequestBody com.flower.cart.dto.UpdateCartItemOptionRequest request) {
+        String cartKey = "cart-user-" + memberId;
+        cartService.updateItemOptions(cartKey, itemId, request.optionIds());
         return ResponseEntity.ok().build();
     }
 

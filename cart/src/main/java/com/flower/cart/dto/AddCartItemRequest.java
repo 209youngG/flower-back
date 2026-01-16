@@ -1,5 +1,6 @@
 package com.flower.cart.dto;
 
+import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "장바구니 상품 추가 요청")
@@ -11,5 +12,8 @@ public record AddCartItemRequest(
     Long productId,
 
     @Schema(description = "담을 수량", example = "1")
-    int quantity
+    int quantity,
+
+    @Schema(description = "선택한 상품 옵션 ID 목록")
+    List<Long> optionIds
 ) {}

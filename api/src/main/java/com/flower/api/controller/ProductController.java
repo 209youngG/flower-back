@@ -50,21 +50,7 @@ public class ProductController {
             @PathVariable Long productId,
             @RequestBody UpdateProductRequest request) {
         
-        // 업데이트를 위한 임시 Entity 생성 (추후 이 부분도 Service로 로직 이동 권장)
-        Product updateInfo = Product.builder()
-                .name(request.name())
-                .description(request.description())
-                .price(request.price())
-                .discountPrice(request.discountPrice())
-                .stockQuantity(request.stockQuantity())
-                .category(request.category())
-                .deliveryType(request.deliveryType())
-                .isActive(request.isActive())
-                .isAvailableToday(request.isAvailableToday())
-                .thumbnailUrl(request.thumbnailUrl())
-                .build();
-
-        productService.updateProduct(productId, updateInfo);
+        productService.updateProduct(productId, request);
         
         ProductDto responseDto = productQueryService.getProductById(productId);
         return ResponseEntity.ok(responseDto);

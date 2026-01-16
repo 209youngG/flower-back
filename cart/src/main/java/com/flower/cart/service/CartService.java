@@ -76,15 +76,34 @@ public class CartService {
     }
 
     @Transactional
-    public CartItem addItem(String cartKey, Long productId, int quantity) {
+    public CartItem addItem(String cartKey, Long productId, int quantity, java.util.List<Long> optionIds) {
         Cart cart = getOrCreateCart(cartKey);
         ProductInfo productInfo = cartProductPort.getProductById(productId);
         
         log.info("장바구니에 상품 추가: {} (수량: {}) - 카트: {}", productInfo.getName(), quantity, cartKey);
 
         CartItem item = cart.addItem(productInfo.getId(), productInfo.getEffectivePrice(), quantity);
+        
+        if (optionIds != null && !optionIds.isEmpty()) {
+            java.util.List<com.flower.product.dto.ProductOptionDto> options = cartProductPort.getOptionsByIds(optionIds);
+            
+            for (com.flower.product.dto.ProductOptionDto opt : options) {
+                CartItemOption itemOption = CartItemOption.builder()
+                        .cartItem(item)
+                        .productOptionId(opt.id())
+                        .priceAdjustment(opt.priceAdjustment())
+                        .build();
+                item.addOption(itemOption);
+            }
+        }
+        
         cartRepository.save(cart);
         return item;
+    }
+    
+    @Transactional
+    public CartItem addItem(String cartKey, Long productId, int quantity) {
+        return addItem(cartKey, productId, quantity, null);
     }
 
     @Transactional
@@ -101,6 +120,39 @@ public class CartService {
         cart.updateItemQuantity(itemId, quantity);
         cartRepository.save(cart);
         log.info("장바구니 아이템 수량 변경: {} -> {} - 카트: {}", itemId, quantity, cartKey);
+    }
+    
+    @Transactional
+    public void updateItemOptions(String cartKey, Long itemId, java.util.List<Long> optionIds) {
+        Cart cart = getCart(cartKey);
+        CartItem item = cart.findItemById(itemId);
+        
+        if (item == null) {
+            throw new EntityNotFoundException("장바구니 아이템을 찾을 수 없습니다: " + itemId);
+        }
+        
+        item.clearOptions();
+        
+        if (optionIds != null && !optionIds.isEmpty()) {
+            java.util.List<com.flower.product.dto.ProductOptionDto> options = cartProductPort.getOptionsByIds(optionIds);
+            
+            for (com.flower.product.dto.ProductOptionDto opt : options) {
+                CartItemOption itemOption = CartItemOption.builder()
+                        .cartItem(item)
+                        .productOptionId(opt.id())
+                        .priceAdjustment(opt.priceAdjustment())
+                        .build();
+                item.addOption(itemOption);
+            }
+        }
+        
+        // 총 금액 재계산
+        cart.calculateTotals();
+        
+        cart.calculateTotals();
+        
+        cartRepository.save(cart); 
+        log.info("장바구니 아이템 옵션 변경: {} - 옵션수: {} - 카트: {}", itemId, optionIds == null ? 0 : optionIds.size(), cartKey);
     }
 
     @Transactional
