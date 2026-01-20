@@ -1,6 +1,5 @@
 package com.flower.cart.domain;
 
-import com.flower.cart.dto.ProductInfo;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -88,16 +87,6 @@ public class CartItem {
     
     public void clearOptions() {
         options.clear();
-    }
-
-    public BigDecimal calculateTotalPrice(ProductInfo productInfo) {
-        BigDecimal total = productInfo.getEffectivePrice().multiply(new BigDecimal(quantity));
-
-        for (CartItemOption option : options) {
-            total = total.add(option.getPriceAdjustment() != null ? option.getPriceAdjustment() : BigDecimal.ZERO);
-        }
-
-        return total;
     }
 
     public BigDecimal getTotalPrice() {

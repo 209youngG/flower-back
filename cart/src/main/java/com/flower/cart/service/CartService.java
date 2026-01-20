@@ -6,16 +6,16 @@ import com.flower.cart.domain.CartItemOption;
 import com.flower.cart.dto.CartDto;
 import com.flower.cart.dto.CartItemDto;
 import com.flower.cart.dto.CartItemOptionDto;
-import com.flower.cart.dto.ProductInfo;
-import com.flower.cart.port.out.CartProductPort;
-import com.flower.cart.port.out.CartRepository;
+import com.flower.cart.repository.CartRepository;
 import com.flower.common.exception.EntityNotFoundException;
+import com.flower.product.dto.ProductDto;
+import com.flower.product.dto.ProductOptionDto;
+import com.flower.product.service.ProductQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class CartService {
 
     private final CartRepository cartRepository;
-    private final CartProductPort cartProductPort;
+    private final ProductQueryService productQueryService;
 
     @Transactional
     public Cart getOrCreateCart(String cartKey) {
@@ -78,16 +78,17 @@ public class CartService {
     @Transactional
     public CartItem addItem(String cartKey, Long productId, int quantity, java.util.List<Long> optionIds) {
         Cart cart = getOrCreateCart(cartKey);
-        ProductInfo productInfo = cartProductPort.getProductById(productId);
+        ProductDto product = productQueryService.getProductById(productId);
         
-        log.info("장바구니에 상품 추가: {} (수량: {}) - 카트: {}", productInfo.getName(), quantity, cartKey);
+        log.info("장바구니에 상품 추가: {} (수량: {}) - 카트: {}", product.name(), quantity, cartKey);
 
-        CartItem item = cart.addItem(productInfo.getId(), productInfo.getEffectivePrice(), quantity);
+        // effectivePrice is mapped to price()
+        CartItem item = cart.addItem(product.id(), product.price(), quantity);
         
         if (optionIds != null && !optionIds.isEmpty()) {
-            java.util.List<com.flower.product.dto.ProductOptionDto> options = cartProductPort.getOptionsByIds(optionIds);
+            java.util.List<ProductOptionDto> options = productQueryService.getOptionsByIds(optionIds);
             
-            for (com.flower.product.dto.ProductOptionDto opt : options) {
+            for (ProductOptionDto opt : options) {
                 CartItemOption itemOption = CartItemOption.builder()
                         .cartItem(item)
                         .productOptionId(opt.id())
@@ -134,9 +135,9 @@ public class CartService {
         item.clearOptions();
         
         if (optionIds != null && !optionIds.isEmpty()) {
-            java.util.List<com.flower.product.dto.ProductOptionDto> options = cartProductPort.getOptionsByIds(optionIds);
+            java.util.List<ProductOptionDto> options = productQueryService.getOptionsByIds(optionIds);
             
-            for (com.flower.product.dto.ProductOptionDto opt : options) {
+            for (ProductOptionDto opt : options) {
                 CartItemOption itemOption = CartItemOption.builder()
                         .cartItem(item)
                         .productOptionId(opt.id())
@@ -147,8 +148,6 @@ public class CartService {
         }
         
         // 총 금액 재계산
-        cart.calculateTotals();
-        
         cart.calculateTotals();
         
         cartRepository.save(cart); 
