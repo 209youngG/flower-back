@@ -103,11 +103,18 @@ public class Product {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (productCode == null) {
+            productCode = generateProductCode();
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+    
+    private String generateProductCode() {
+        return "PRD-" + System.currentTimeMillis();
     }
 
     /**

@@ -28,10 +28,11 @@ public class ProductService implements ProductQueryService {
     private final ProductOptionRepository productOptionRepository;
     private final ProductAddonRepository productAddonRepository;
 
+    // --- Query Methods ---
+
     @Transactional(readOnly = true)
     public Product getById(Long productId) {
-        return productRepository.findById(productId)
-                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다: " + productId));
+        return findProductById(productId);
     }
 
     @Override
@@ -54,8 +55,8 @@ public class ProductService implements ProductQueryService {
 
     @Transactional(readOnly = true)
     public Map<Long, Product> getMapByIds(List<Long> productIds) {
-        List<Product> products = getByIds(productIds);
-        return products.stream().collect(Collectors.toMap(Product::getId, Function.identity()));
+        return getByIds(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
     }
 
     @Override
@@ -70,30 +71,6 @@ public class ProductService implements ProductQueryService {
         return productRepository.findAll().stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
-    }
-
-    private ProductDto toDto(Product product) {
-        List<ProductOptionDto> optionDtos = product.getOptions().stream()
-                .map(opt -> new ProductOptionDto(
-                        opt.getId(),
-                        opt.getName(),
-                        opt.getOptionValue(),
-                        opt.getPriceAdjustment()
-                ))
-                .collect(Collectors.toList());
-
-        return new ProductDto(
-            product.getId(),
-            product.getName(),
-            product.getEffectivePrice(),
-            product.getStockQuantity(),
-            product.getThumbnailUrl(),
-            product.getIsActive(),
-            product.getIsAvailableToday(),
-            optionDtos,
-            product.getCategory(),
-            product.getDeliveryType()
-        );
     }
 
     @Transactional(readOnly = true)
@@ -137,46 +114,20 @@ public class ProductService implements ProductQueryService {
         return productRepository.findAvailableProductsByCategory(category);
     }
 
+    // --- Command Methods ---
+
     @Transactional
     public Product createProduct(CreateProductRequest request) {
         log.info("신규 상품 생성 요청: {}", request.name());
 
-        // 1. 상품 엔티티 생성 및 저장
-        Product product = Product.builder()
-                .name(request.name())
-                .productCode(request.productCode())
-                .description(request.description())
-                .price(request.price())
-                .stockQuantity(request.stockQuantity())
-                .category(request.category())
-                .deliveryType(request.deliveryType())
-                .thumbnailUrl(request.thumbnailUrl())
-                .isActive(true)
-                .build();
-        
+        Product product = buildProductFromRequest(request);
         Product savedProduct = productRepository.save(product);
 
-        // 2. 상품 옵션 저장
-        if (request.options() != null && !request.options().isEmpty()) {
-            List<ProductOption> options = request.options().stream()
-                    .map(optRequest -> ProductOption.builder()
-                            .product(savedProduct)
-                            .name(optRequest.name())
-                            .optionValue(optRequest.value())
-                            .priceAdjustment(optRequest.priceAdjustment())
-                            .stockQuantity(optRequest.stockQuantity())
-                            .displayOrder(optRequest.displayOrder())
-                            .isAvailable(true)
-                            .build())
-                    .collect(Collectors.toList());
-            
-            productOptionRepository.saveAll(options);
-        }
+        saveProductOptions(request.options(), savedProduct);
 
         return savedProduct;
     }
     
-    // 테스트용 등에서 Entity 직접 저장이 필요한 경우를 위해 유지 (오버로딩)
     @Transactional
     public Product createProduct(Product product) {
         return productRepository.save(product);
@@ -184,37 +135,12 @@ public class ProductService implements ProductQueryService {
 
     @Transactional
     public Product updateProduct(Long productId, UpdateProductRequest request) {
-        Product existingProduct = getById(productId);
+        Product existingProduct = findProductById(productId);
 
         log.info("상품 정보 수정: {}", existingProduct.getName());
-
-        existingProduct.setName(request.name());
-        existingProduct.setDescription(request.description());
-        existingProduct.setPrice(request.price());
-        existingProduct.setDiscountPrice(request.discountPrice());
-        existingProduct.setStockQuantity(request.stockQuantity());
-        existingProduct.setCategory(request.category());
-        existingProduct.setIsActive(request.isActive());
-        existingProduct.setIsAvailableToday(request.isAvailableToday());
-        existingProduct.setThumbnailUrl(request.thumbnailUrl());
-        existingProduct.setDeliveryType(request.deliveryType());
-
-        if (request.options() != null) {
-            existingProduct.getOptions().clear();
-            
-            for (CreateProductOptionRequest optReq : request.options()) {
-                ProductOption option = ProductOption.builder()
-                        .product(existingProduct)
-                        .name(optReq.name())
-                        .optionValue(optReq.value())
-                        .priceAdjustment(optReq.priceAdjustment())
-                        .stockQuantity(optReq.stockQuantity())
-                        .displayOrder(optReq.displayOrder())
-                        .isAvailable(true)
-                        .build();
-                existingProduct.getOptions().add(option);
-            }
-        }
+        
+        updateProductFields(existingProduct, request);
+        updateProductOptions(existingProduct, request.options());
 
         return productRepository.save(existingProduct);
     }
@@ -226,7 +152,7 @@ public class ProductService implements ProductQueryService {
 
     @Transactional
     public void deleteProduct(Long productId) {
-        Product product = getById(productId);
+        Product product = findProductById(productId);
         log.info("상품 삭제 처리: {}", product.getName());
         product.setIsActive(false);
         productRepository.save(product);
@@ -234,27 +160,32 @@ public class ProductService implements ProductQueryService {
 
     @Transactional(readOnly = true)
     public boolean checkStock(Long productId, int quantity) {
-        Product product = getById(productId);
+        Product product = findProductById(productId);
         return product.hasSufficientStock(quantity);
     }
 
     @Transactional
     public void decreaseStock(Long productId, int quantity) {
-        Product product = getById(productId);
+        Product product = productRepository.findByIdWithLock(productId)
+                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다: " + productId));
+        
         product.decreaseStock(quantity);
         productRepository.save(product);
+        
         log.info("상품 재고 감소: {} - 수량: {}, 남은재고: {}",
                 product.getName(), quantity, product.getStockQuantity());
     }
 
     @Transactional
     public void increaseStock(Long productId, int quantity) {
-        Product product = getById(productId);
+        Product product = findProductById(productId);
         product.increaseStock(quantity);
         productRepository.save(product);
         log.info("상품 재고 증가: {} - 수량: {}, 남은재고: {}",
                 product.getName(), quantity, product.getStockQuantity());
     }
+
+    // --- Options & Addons ---
 
     @Override
     @Transactional(readOnly = true)
@@ -263,12 +194,7 @@ public class ProductService implements ProductQueryService {
             return java.util.Collections.emptyList();
         }
         return productOptionRepository.findAllById(optionIds).stream()
-            .map(opt -> new ProductOptionDto(
-                opt.getId(),
-                opt.getName(),
-                opt.getOptionValue(),
-                opt.getPriceAdjustment()
-            ))
+            .map(this::toOptionDto)
             .collect(Collectors.toList());
     }
 
@@ -302,5 +228,103 @@ public class ProductService implements ProductQueryService {
     public ProductAddon createProductAddon(ProductAddon addon) {
         log.info("신규 추가 상품 생성: {}", addon.getName());
         return productAddonRepository.save(addon);
+    }
+
+    // --- Private Helper Methods ---
+
+    private Product findProductById(Long productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다: " + productId));
+    }
+
+    private Product buildProductFromRequest(CreateProductRequest request) {
+        return Product.builder()
+                .name(request.name())
+                .productCode(request.productCode())
+                .description(request.description())
+                .price(request.price())
+                .stockQuantity(request.stockQuantity())
+                .category(request.category())
+                .deliveryType(request.deliveryType())
+                .thumbnailUrl(request.thumbnailUrl())
+                .isActive(true)
+                .build();
+    }
+
+    private void saveProductOptions(List<CreateProductOptionRequest> optionRequests, Product product) {
+        if (optionRequests != null && !optionRequests.isEmpty()) {
+            List<ProductOption> options = optionRequests.stream()
+                    .map(optRequest -> ProductOption.builder()
+                            .product(product)
+                            .name(optRequest.name())
+                            .optionValue(optRequest.value())
+                            .priceAdjustment(optRequest.priceAdjustment())
+                            .stockQuantity(optRequest.stockQuantity())
+                            .displayOrder(optRequest.displayOrder())
+                            .isAvailable(true)
+                            .build())
+                    .collect(Collectors.toList());
+            productOptionRepository.saveAll(options);
+        }
+    }
+
+    private void updateProductFields(Product product, UpdateProductRequest request) {
+        product.setName(request.name());
+        product.setDescription(request.description());
+        product.setPrice(request.price());
+        product.setDiscountPrice(request.discountPrice());
+        product.setStockQuantity(request.stockQuantity());
+        product.setCategory(request.category());
+        product.setIsActive(request.isActive());
+        product.setIsAvailableToday(request.isAvailableToday());
+        product.setThumbnailUrl(request.thumbnailUrl());
+        product.setDeliveryType(request.deliveryType());
+    }
+
+    private void updateProductOptions(Product product, List<CreateProductOptionRequest> optionRequests) {
+        if (optionRequests != null) {
+            product.getOptions().clear();
+            
+            for (CreateProductOptionRequest optReq : optionRequests) {
+                ProductOption option = ProductOption.builder()
+                        .product(product)
+                        .name(optReq.name())
+                        .optionValue(optReq.value())
+                        .priceAdjustment(optReq.priceAdjustment())
+                        .stockQuantity(optReq.stockQuantity())
+                        .displayOrder(optReq.displayOrder())
+                        .isAvailable(true)
+                        .build();
+                product.getOptions().add(option);
+            }
+        }
+    }
+
+    private ProductDto toDto(Product product) {
+        List<ProductOptionDto> optionDtos = product.getOptions().stream()
+                .map(this::toOptionDto)
+                .collect(Collectors.toList());
+
+        return new ProductDto(
+            product.getId(),
+            product.getName(),
+            product.getEffectivePrice(),
+            product.getStockQuantity(),
+            product.getThumbnailUrl(),
+            product.getIsActive(),
+            product.getIsAvailableToday(),
+            optionDtos,
+            product.getCategory(),
+            product.getDeliveryType()
+        );
+    }
+
+    private ProductOptionDto toOptionDto(ProductOption opt) {
+        return new ProductOptionDto(
+                opt.getId(),
+                opt.getName(),
+                opt.getOptionValue(),
+                opt.getPriceAdjustment()
+        );
     }
 }

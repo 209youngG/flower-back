@@ -48,5 +48,5 @@ subprojects {
 
     tasks.withType(Test) {
         useJUnitPlatform()
-    }
+        systemProperty "spring.main.allow-bean-definition-overriding", "true"    }
 }

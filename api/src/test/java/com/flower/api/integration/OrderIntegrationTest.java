@@ -7,11 +7,13 @@ import com.flower.order.dto.CreateOrderRequest;
 import com.flower.product.domain.Product;
 import com.flower.product.domain.ProductCategory;
 import com.flower.product.service.ProductService;
+import com.flower.ApiApplication;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -25,8 +27,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(classes = TestConfig.class)
+@SpringBootTest(classes = {ApiApplication.class, TestConfig.class})
 @Transactional
+@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class OrderIntegrationTest {
 
     @Autowired
@@ -82,7 +85,8 @@ class OrderIntegrationTest {
                 "서울 강남구",
                 "010-1234-5678",
                 "홍길동",
-                null // deliveryNote
+                null, 
+                false 
         );
 
         mockMvc.perform(post("/api/v1/orders")

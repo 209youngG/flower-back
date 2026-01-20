@@ -18,9 +18,10 @@ public class OrderPlacedEvent extends DomainEvent {
     
     private final List<OrderItemInfo> items;
     private final DeliveryInfo deliveryInfo;
+    private final boolean isDirectOrder;
 
     public OrderPlacedEvent(String orderNumber, Long internalOrderId, String itemSummary, int totalQuantity, 
-                           BigDecimal totalAmount, List<OrderItemInfo> items, DeliveryInfo deliveryInfo) {
+                           BigDecimal totalAmount, List<OrderItemInfo> items, DeliveryInfo deliveryInfo, boolean isDirectOrder) {
         super(orderNumber);
         this.orderNumber = orderNumber;
         this.internalOrderId = internalOrderId;
@@ -29,6 +30,12 @@ public class OrderPlacedEvent extends DomainEvent {
         this.totalAmount = totalAmount;
         this.items = items;
         this.deliveryInfo = deliveryInfo;
+        this.isDirectOrder = isDirectOrder;
+    }
+    
+    public OrderPlacedEvent(String orderNumber, Long internalOrderId, String itemSummary, int totalQuantity, 
+            BigDecimal totalAmount, List<OrderItemInfo> items, DeliveryInfo deliveryInfo) {
+        this(orderNumber, internalOrderId, itemSummary, totalQuantity, totalAmount, items, deliveryInfo, false);
     }
     
     // Legacy constructor for backward compatibility

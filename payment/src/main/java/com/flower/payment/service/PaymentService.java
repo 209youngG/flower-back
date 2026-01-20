@@ -1,5 +1,6 @@
 package com.flower.payment.service;
 
+import com.flower.common.exception.PaymentProcessingException;
 import com.flower.common.event.OrderPlacedEvent;
 import com.flower.common.event.PaymentCompletedEvent;
 import com.flower.order.service.OrderService;
@@ -23,37 +24,49 @@ public class PaymentService {
     public void processPayment(Long orderId, String method) {
         log.info("Processing payment for order: {}, method: {}", orderId, method);
 
-        // 1. 결제 승인 로직 (Mock)
-        // 실제 PG사 연동 대신 성공으로 가정
-        
-        // 무통장 입금인 경우 즉시 결제 완료 처리하지 않음 (관리자 확인 필요)
-        if ("BANK_TRANSFER".equalsIgnoreCase(method)) {
-            log.info("Bank transfer requested for order: {}. Waiting for confirmation.", orderId);
-            return;
+        try {
+            if ("BANK_TRANSFER".equalsIgnoreCase(method)) {
+                log.info("Bank transfer requested for order: {}. Waiting for confirmation.", orderId);
+                return;
+            }
+            
+            // 2. 주문 상태 변경 (PAID)
+            orderService.markAsPaid(orderId);
+            
+            // 3. 결제 완료 이벤트 발행 (배송 등 후속 처리용)
+            var order = orderService.getOrderDetail(orderId);
+            
+            var items = order.items().stream()
+                    .map(item -> new OrderPlacedEvent.OrderItemInfo(
+                            item.getProductId(),
+                            item.getProductName(),
+                            item.getQuantity(),
+                            item.getUnitPrice()
+                    ))
+                    .collect(Collectors.toList());
+    
+            eventPublisher.publishEvent(new PaymentCompletedEvent(
+                    order.orderNumber(),
+                    order.id(),
+                    order.memberId(),
+                    items,
+                    order.isDirectOrder()
+            ));
+            
+            log.info("Payment completed for order: {}", orderId);
+            
+        } catch (Exception e) {
+            log.error("Payment failed for order: {}, reason: {}", orderId, e.getMessage());
+            try {
+                orderService.markAsFailed(orderId);
+            } catch (Exception ex) {
+                log.error("Failed to mark order as failed during rollback: {}", ex.getMessage());
+            }
+            if (e instanceof PaymentProcessingException) {
+                throw (PaymentProcessingException) e;
+            }
+            throw new PaymentProcessingException("Payment processing failed", e);
         }
-        
-        // 2. 주문 상태 변경 (PAID)
-        orderService.markAsPaid(orderId);
-        
-        // 3. 재고 차감 요청 (이벤트 발행)
-        var order = orderService.getOrderDetail(orderId);
-        
-        var items = order.items().stream()
-                .map(item -> new OrderPlacedEvent.OrderItemInfo(
-                        item.getProductId(),
-                        item.getProductName(),
-                        item.getQuantity(),
-                        item.getUnitPrice()
-                ))
-                .collect(Collectors.toList());
-
-        eventPublisher.publishEvent(new PaymentCompletedEvent(
-                order.orderNumber(),
-                order.id(),
-                items
-        ));
-        
-        log.info("Payment completed for order: {}", orderId);
     }
 
     @Transactional

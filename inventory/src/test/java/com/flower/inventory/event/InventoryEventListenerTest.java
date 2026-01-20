@@ -1,6 +1,7 @@
 package com.flower.inventory.event;
 
 import com.flower.common.event.OrderPlacedEvent;
+import com.flower.common.event.PaymentCompletedEvent;
 import com.flower.product.service.ProductService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.ArrayList;
 import static org.mockito.Mockito.*;
 
 /**
@@ -39,7 +41,7 @@ class InventoryEventListenerTest {
         
         OrderPlacedEvent event = new OrderPlacedEvent(
                 "ORD-001", 1L, "Rose x 2, Lily x 3", 5, new BigDecimal("44000"),
-                List.of(item1, item2), null
+                List.of(item1, item2), null, false
         );
 
         // 실행
@@ -58,7 +60,7 @@ class InventoryEventListenerTest {
         OrderPlacedEvent.OrderItemInfo item1 = new OrderPlacedEvent.OrderItemInfo(1L, "Rose", 2, new BigDecimal("10000"));
         OrderPlacedEvent event = new OrderPlacedEvent(
                 "ORD-FAIL", 1L, "Rose x 2", 2, new BigDecimal("20000"),
-                List.of(item1), null
+                List.of(item1), null, false
         );
 
         doThrow(new RuntimeException("Out of stock")).when(productService).decreaseStock(1L, 2);
@@ -77,7 +79,7 @@ class InventoryEventListenerTest {
         // 준비
         OrderPlacedEvent event = new OrderPlacedEvent(
                 "ORD-002", 2L, "Unknown Item", 1, new BigDecimal("10000"),
-                null, null
+                null, null, false
         );
 
         // 실행

@@ -3,7 +3,6 @@ package com.flower.inventory.event;
 import com.flower.common.event.InventoryDeductionFailedEvent;
 import com.flower.common.event.OrderCancelledEvent;
 import com.flower.common.event.OrderPlacedEvent;
-import com.flower.common.event.PaymentCompletedEvent;
 import com.flower.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +26,8 @@ public class InventoryEventListener {
      */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handlePaymentCompleted(PaymentCompletedEvent event) {
-        log.info("결제 완료 이벤트 수신 - 재고 차감 시작: 주문ID={}", event.getOrderNumber());
+    public void handleOrderPlaced(OrderPlacedEvent event) {
+        log.info("주문 생성 이벤트 수신 - 재고 차감 시작: 주문번호={}", event.getOrderNumber());
 
         if (event.getItems() != null) {
             try {
@@ -40,7 +39,7 @@ public class InventoryEventListener {
                 eventPublisher.publishEvent(new InventoryDeductionFailedEvent(event.getOrderNumber(), e.getMessage()));
             }
         } else {
-            log.warn("주문 상품 상세 정보가 없습니다. 재고 차감을 건너뜁니다. OrderID={}", event.getOrderNumber());
+            log.warn("주문 상품 상세 정보가 없습니다. 재고 차감을 건너뜁니다. OrderNumber={}", event.getOrderNumber());
         }
     }
 

@@ -5,12 +5,14 @@ import com.flower.common.event.OrderCancelledEvent;
 import com.flower.order.domain.Order;
 import com.flower.order.domain.OrderItem;
 import com.flower.order.domain.OrderItemOption;
+import com.flower.order.domain.OrderStatus;
 import com.flower.order.dto.CreateOrderRequest;
 import com.flower.order.dto.CreateOrderResponse;
 import com.flower.order.dto.OrderDetailDto;
 import com.flower.order.dto.OrderDto;
 import com.flower.order.dto.OrderItemDto;
 import com.flower.order.dto.OrderItemOptionDto;
+import com.flower.order.dto.UpdateOrderStatusRequest;
 import com.flower.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,19 +36,25 @@ public class OrderService {
 
     @Transactional
     public void markAsPaid(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다: " + orderId));
+        Order order = findOrderById(orderId);
         order.markAsPaid();
-        order.setStatus(com.flower.order.domain.OrderStatus.PAID); // 결제 완료 시 상태 변경
         orderRepository.save(order);
     }
 
     @Transactional
     public void markAsRefunded(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다: " + orderId));
-        order.setPaymentStatus(com.flower.order.domain.Order.PaymentStatus.REFUNDED);
+        Order order = findOrderById(orderId);
+        order.markAsRefunded();
         orderRepository.save(order);
+    }
+
+    @Transactional
+    public void markAsFailed(Long orderId) {
+        Order order = findOrderById(orderId);
+        order.markAsFailed();
+        orderRepository.save(order);
+
+        eventPublisher.publishEvent(createOrderCancelledEvent(order, "결제 실패"));
     }
 
     @Transactional
@@ -61,38 +69,17 @@ public class OrderService {
 
     @Transactional
     public void cancelOrderById(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다: " + orderId));
+        Order order = findOrderById(orderId);
         
-        if (order.getStatus() == com.flower.order.domain.OrderStatus.SHIPPED || 
-            order.getStatus() == com.flower.order.domain.OrderStatus.DELIVERED) {
-            throw new IllegalStateException("이미 배송된 주문은 취소할 수 없습니다.");
-        }
+        validateOrderCancellable(order.getStatus());
         
         order.cancel();
         
-        List<OrderPlacedEvent.OrderItemInfo> items = order.getItems().stream()
-                .map(item -> new OrderPlacedEvent.OrderItemInfo(
-                        item.getProductId(),
-                        item.getProductName(),
-                        item.getQuantity(),
-                        item.getUnitPrice()
-                ))
-                .collect(Collectors.toList());
-        
-        eventPublisher.publishEvent(new OrderCancelledEvent(
-                order.getOrderNumber(),
-                order.getId(), // orderId 주입
-                "사용자 취소",
-                order.getMemberId(),
-                items
-        ));
+        eventPublisher.publishEvent(createOrderCancelledEvent(order, "사용자 취소"));
     }
 
-    @Transactional(readOnly = true)
     public OrderDetailDto getOrderDetail(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다: " + orderId));
+        Order order = findOrderById(orderId);
         
         List<OrderItemDto> itemDtos = order.getItems().stream()
             .map(item -> OrderItemDto.builder()
@@ -114,36 +101,38 @@ public class OrderService {
                 order.getDeliveryPhone(),
                 order.getDeliveryAddress(),
                 order.getDeliveryNote(),
+                order.getMemberId(),
+                order.getIsDirectOrder() != null && order.getIsDirectOrder(),
                 itemDtos
         );
     }
 
-    @Transactional(readOnly = true)
     public List<OrderDto> getOrdersByMemberId(Long memberId) {
-        return orderRepository.findByMemberIdOrderByCreatedAtDesc(memberId).stream()
-                .map(order -> {
-                    String itemSummary = order.getItems().isEmpty() ? "" :
-                            order.getItems().get(0).getProductName() + 
-                            (order.getItems().size() > 1 ? " 외 " + (order.getItems().size() - 1) + "건" : "");
-                            
-                    return new OrderDto(
-                            order.getId(),
-                            order.getOrderNumber(),
-                            order.getTotalAmount(),
-                            order.getStatus().name(),
-                            order.getStatus().getDescription(),
-                            order.getCreatedAt(),
-                            itemSummary
-                    );
-                })
+        return orderRepository.findByMemberIdWithItems(memberId).stream()
+                .map(this::toOrderDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<OrderDto> getAllOrders() {
+        return orderRepository.findAllWithItems().stream()
+                .map(this::toOrderDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public OrderDto updateOrderStatus(Long orderId, UpdateOrderStatusRequest request) {
+        Order order = findOrderById(orderId);
+        
+        order.setStatus(request.status());
+        orderRepository.save(order);
+        
+        return toOrderDto(order);
     }
 
     @Transactional
     public CreateOrderResponse createOrder(CreateOrderRequest request, List<OrderItemDto> orderItems) {
         log.info("주문 생성 요청 - 회원 ID: {}", request.memberId());
 
-        // 1. 주문 엔티티 생성
         Order order = Order.builder()
                 .memberId(request.memberId())
                 .deliveryMethod(request.deliveryMethod())
@@ -153,9 +142,9 @@ public class OrderService {
                 .deliveryPhone(request.deliveryPhone())
                 .deliveryName(request.deliveryName())
                 .deliveryNote(request.deliveryNote())
+                .isDirectOrder(request.isDirectOrder() != null && request.isDirectOrder())
                 .build();
 
-        // 2. 주문 상품 추가
         for (OrderItemDto itemDto : orderItems) {
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
@@ -178,26 +167,84 @@ public class OrderService {
                 }
             }
             
-            // 총 가격은 엔티티 저장 시(@PrePersist) 또는 getTotalPrice() 호출 시 자동 계산됨
             order.addItem(orderItem);
         }
 
-        // 3. 총 금액 계산
         order.calculateTotal();
 
-        // 4. 저장
         Order savedOrder = orderRepository.save(order);
 
-        // 5. 이벤트 데이터 준비
-        String itemSummary = savedOrder.getItems().stream()
+        publishOrderPlacedEvent(savedOrder);
+        
+        log.info("주문 생성 완료 - 주문번호: {}", savedOrder.getOrderNumber());
+
+        return CreateOrderResponse.from(savedOrder);
+    }
+
+    // --- Private Helper Methods ---
+
+    private Order findOrderById(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다: " + orderId));
+    }
+
+    private void validateOrderCancellable(OrderStatus status) {
+        switch (status) {
+            case SHIPPED, DELIVERED -> throw new IllegalStateException("이미 배송된 주문은 취소할 수 없습니다.");
+            default -> {} // OK
+        }
+    }
+
+    private String createItemSummary(List<OrderItem> items) {
+        if (items == null || items.isEmpty()) {
+            return "";
+        }
+        String firstItemName = items.get(0).getProductName();
+        int size = items.size();
+        return size > 1 ? firstItemName + " 외 " + (size - 1) + "건" : firstItemName;
+    }
+
+    private OrderDto toOrderDto(Order order) {
+        return new OrderDto(
+                order.getId(),
+                order.getOrderNumber(),
+                order.getTotalAmount(),
+                order.getStatus().name(),
+                order.getStatus().getDescription(),
+                order.getCreatedAt(),
+                createItemSummary(order.getItems())
+        );
+    }
+
+    private OrderCancelledEvent createOrderCancelledEvent(Order order, String reason) {
+        List<OrderPlacedEvent.OrderItemInfo> items = order.getItems().stream()
+                .map(item -> new OrderPlacedEvent.OrderItemInfo(
+                        item.getProductId(),
+                        item.getProductName(),
+                        item.getQuantity(),
+                        item.getUnitPrice()
+                ))
+                .collect(Collectors.toList());
+
+        return new OrderCancelledEvent(
+                order.getOrderNumber(),
+                order.getId(),
+                reason,
+                order.getMemberId(),
+                items
+        );
+    }
+
+    private void publishOrderPlacedEvent(Order order) {
+        String itemSummary = order.getItems().stream()
                 .map(item -> item.getProductName() + " x " + item.getQuantity())
                 .collect(Collectors.joining(", "));
         
-        int totalQuantity = savedOrder.getItems().stream()
+        int totalQuantity = order.getItems().stream()
                 .mapToInt(OrderItem::getQuantity)
                 .sum();
 
-        List<OrderPlacedEvent.OrderItemInfo> itemInfos = savedOrder.getItems().stream()
+        List<OrderPlacedEvent.OrderItemInfo> itemInfos = order.getItems().stream()
                 .map(item -> new OrderPlacedEvent.OrderItemInfo(
                         item.getProductId(),
                         item.getProductName(),
@@ -207,25 +254,21 @@ public class OrderService {
                 .collect(Collectors.toList());
 
         OrderPlacedEvent.DeliveryInfo deliveryInfo = new OrderPlacedEvent.DeliveryInfo(
-                savedOrder.getDeliveryName(),
-                savedOrder.getDeliveryPhone(),
-                savedOrder.getDeliveryAddress(),
-                savedOrder.getDeliveryNote()
+                order.getDeliveryName(),
+                order.getDeliveryPhone(),
+                order.getDeliveryAddress(),
+                order.getDeliveryNote()
         );
 
-        // 6. 이벤트 발행
         eventPublisher.publishEvent(new OrderPlacedEvent(
-                savedOrder.getOrderNumber(), // orderNumber (Business Key)
-                savedOrder.getId(),          // orderId (Internal ID)
+                order.getOrderNumber(),
+                order.getId(),
                 itemSummary,
                 totalQuantity,
-                savedOrder.getTotalAmount(),
+                order.getTotalAmount(),
                 itemInfos,
-                deliveryInfo
+                deliveryInfo,
+                order.getIsDirectOrder()
         ));
-        
-        log.info("주문 생성 완료 - 주문번호: {}", savedOrder.getOrderNumber());
-
-        return CreateOrderResponse.from(savedOrder);
     }
 }

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "orders", indexes = @Index(name = "idx_order_member_id", columnList = "member_id"))
 @Data
 @Builder
 @NoArgsConstructor
@@ -53,6 +53,10 @@ public class Order {
     @Column(name = "delivery_method", length = 20)
     @Builder.Default
     private DeliveryMethod deliveryMethod = DeliveryMethod.SHIPPING;
+
+    @Column(name = "is_direct_order")
+    @Builder.Default
+    private Boolean isDirectOrder = false;
 
     @Column(name = "reserved_at")
     private LocalDateTime reservedAt;
@@ -119,8 +123,21 @@ public class Order {
     }
 
     public void markAsPaid() {
+        if (this.status == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("취소된 주문은 결제할 수 없습니다.");
+        }
         this.paidAt = LocalDateTime.now();
         this.paymentStatus = PaymentStatus.PAID;
+        this.status = OrderStatus.PAID;
+    }
+
+    public void markAsFailed() {
+        this.status = OrderStatus.FAILED;
+        this.paymentStatus = PaymentStatus.FAILED;
+    }
+
+    public void markAsRefunded() {
+        this.paymentStatus = PaymentStatus.REFUNDED;
     }
 
     public void markAsShipped() {

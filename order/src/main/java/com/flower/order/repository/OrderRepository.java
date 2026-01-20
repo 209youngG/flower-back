@@ -11,5 +11,9 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByOrderNumber(String orderNumber);
     
-    List<Order> findByMemberIdOrderByCreatedAtDesc(Long memberId);
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items WHERE o.memberId = :memberId ORDER BY o.createdAt DESC")
+    List<Order> findByMemberIdWithItems(@org.springframework.data.repository.query.Param("memberId") Long memberId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items ORDER BY o.createdAt DESC")
+    List<Order> findAllWithItems();
 }

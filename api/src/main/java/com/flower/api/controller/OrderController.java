@@ -12,6 +12,7 @@ import com.flower.order.dto.OrderDetailDto;
 import com.flower.order.dto.OrderDto;
 import com.flower.order.dto.OrderItemDto;
 import com.flower.order.dto.OrderItemOptionDto;
+import com.flower.order.dto.UpdateOrderStatusRequest;
 import com.flower.order.service.OrderService;
 import com.flower.product.dto.ProductDto;
 import com.flower.product.dto.ProductOptionDto;
@@ -21,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -92,9 +94,6 @@ public class OrderController {
         // 3. 주문 생성 (DTO 반환)
         CreateOrderResponse response = orderService.createOrder(request, orderItems);
 
-        // 4. 장바구니 비우기
-        cartService.clearCart(cart.cartKey());
-
         return ResponseEntity.ok(response);
     }
 
@@ -139,7 +138,8 @@ public class OrderController {
                 request.deliveryAddress(),
                 request.deliveryPhone(),
                 request.deliveryName(),
-                request.deliveryNote()
+                request.deliveryNote(),
+                true
         );
 
         // 4. 주문 생성
@@ -152,6 +152,22 @@ public class OrderController {
     @GetMapping("/my")
     public ResponseEntity<List<OrderDto>> getMyOrders(@RequestParam Long memberId) {
         return ResponseEntity.ok(orderService.getOrdersByMemberId(memberId));
+    }
+
+    @Operation(summary = "전체 주문 조회 (관리자)", description = "모든 회원의 주문 내역을 조회합니다.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping
+    public ResponseEntity<List<OrderDto>> getAllOrders() {
+        return ResponseEntity.ok(orderService.getAllOrders());
+    }
+
+    @Operation(summary = "주문 상태 변경 (관리자)", description = "주문의 상태를 변경합니다.")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{orderId}/status")
+    public ResponseEntity<OrderDto> updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestBody UpdateOrderStatusRequest request) {
+        return ResponseEntity.ok(orderService.updateOrderStatus(orderId, request));
     }
 
     @Operation(summary = "주문 상세 조회", description = "주문 ID로 상세 정보를 조회합니다.")

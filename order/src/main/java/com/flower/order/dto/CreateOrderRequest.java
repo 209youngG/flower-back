@@ -30,5 +30,8 @@ public record CreateOrderRequest(
     String deliveryName,
 
     @Schema(description = "배송 요청 사항", example = "문 앞에 놓아주세요")
-    String deliveryNote
+    String deliveryNote,
+    
+    @Schema(description = "바로 주문 여부 (기본값: false)")
+    Boolean isDirectOrder
 ) {}

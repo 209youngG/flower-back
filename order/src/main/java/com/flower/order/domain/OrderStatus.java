@@ -11,7 +11,8 @@ public enum OrderStatus {
     PROCESSING("상품 준비중"),
     SHIPPED("배송중"),
     DELIVERED("배송 완료"),
-    CANCELLED("주문 취소");
+    CANCELLED("주문 취소"),
+    FAILED("주문 실패");
 
     private final String description;
 }

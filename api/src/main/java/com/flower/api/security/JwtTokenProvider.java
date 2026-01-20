@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret:flower-shop-secret-key-must-be-very-long-and-secure-enough-to-work}")
+    @Value("${jwt.secret}")
     private String secretKey;
 
     private final long validityInMilliseconds = 3600000; // 1시간

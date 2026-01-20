@@ -107,13 +107,14 @@ class ProductServiceTest {
     @DisplayName("Should decrease stock successfully")
     void shouldDecreaseStockSuccessfully() {
         // 준비
-        when(productRepository.findById(1L)).thenReturn(Optional.of(testProduct));
+        when(productRepository.findByIdWithLock(1L)).thenReturn(Optional.of(testProduct));
         when(productRepository.save(any(Product.class))).thenReturn(testProduct);
 
         // 실행
         productService.decreaseStock(1L, 10);
 
         // 검증
+        verify(productRepository, times(1)).findByIdWithLock(1L);
         verify(productRepository, times(1)).save(any(Product.class));
     }
 

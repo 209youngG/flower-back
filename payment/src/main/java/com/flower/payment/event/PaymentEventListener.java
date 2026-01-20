@@ -1,6 +1,8 @@
 package com.flower.payment.event;
 
+import com.flower.common.event.InventoryDeductionFailedEvent;
 import com.flower.common.event.OrderCancelledEvent;
+import com.flower.order.service.OrderService;
 import com.flower.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class PaymentEventListener {
 
     private final PaymentService paymentService;
+    private final OrderService orderService;
 
     /**
      * 주문 취소 이벤트 수신 시 결제 취소 처리
@@ -29,7 +32,21 @@ public class PaymentEventListener {
             log.info("결제 취소 완료: 주문ID={}", event.getOrderId());
         } catch (Exception e) {
             log.error("결제 취소 실패: 주문ID={}, 오류={}", event.getOrderId(), e.getMessage());
-            // 필요한 경우 보상 트랜잭션 실패 이벤트 발행 또는 알림 전송 로직 추가
+        }
+    }
+
+    /**
+     * 재고 차감 실패 시 보상 트랜잭션 (결제 취소 및 주문 취소)
+     */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleInventoryDeductionFailed(InventoryDeductionFailedEvent event) {
+        log.info("재고 차감 실패 이벤트 수신 - 보상 트랜잭션 시작: 주문번호={}, 사유={}", event.getOrderNumber(), event.getReason());
+        
+        try {
+            orderService.cancelOrder(event.getOrderNumber(), "재고 부족으로 인한 자동 취소: " + event.getReason());
+        } catch (Exception e) {
+            log.error("보상 트랜잭션 실패: 주문번호={}, 오류={}", event.getOrderNumber(), e.getMessage());
         }
     }
 }

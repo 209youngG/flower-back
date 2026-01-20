@@ -39,7 +39,7 @@ tasks.withType(JavaCompile) {
 }
 
 bootJar {
-    enabled = false
+    enabled = true
 }
 
 tasks.withType(JavaCompile) {
@@ -47,5 +47,5 @@ tasks.withType(JavaCompile) {
 }
 
 bootJar {
-    enabled = false
+    enabled = true
 }

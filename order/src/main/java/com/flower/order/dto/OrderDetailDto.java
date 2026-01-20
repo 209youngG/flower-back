@@ -19,5 +19,9 @@ public record OrderDetailDto(
     String deliveryAddress,
     String deliveryNote,
     
+    Long memberId,
+    
+    boolean isDirectOrder,
+    
     List<OrderItemDto> items
 ) {}
