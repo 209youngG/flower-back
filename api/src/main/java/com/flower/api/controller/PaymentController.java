@@ -1,7 +1,6 @@
 package com.flower.api.controller;
 
 import com.flower.api.dto.PaymentRequest;
-import com.flower.order.service.OrderService;
 import com.flower.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,12 +20,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final OrderService orderService;
 
     @Operation(summary = "결제 승인", description = "주문에 대한 결제를 수행합니다.")
     @PostMapping
     public ResponseEntity<Void> processPayment(@RequestBody PaymentRequest request) {
-        paymentService.processPayment(request.orderId(), request.paymentMethod());
+        // API DTO -> Service DTO 변환
+        var serviceRequest = new com.flower.payment.dto.PaymentRequest(
+            request.orderNumber(),
+            request.orderId(),
+            request.amount(),
+            request.paymentKey(),
+            request.paymentMethod(),
+            "주문 결제" // orderName은 임시로 고정
+        );
+        
+        paymentService.processPayment(serviceRequest);
         return ResponseEntity.ok().build();
     }
 }

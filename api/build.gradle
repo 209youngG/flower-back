@@ -41,11 +41,3 @@ tasks.withType(JavaCompile) {
 bootJar {
     enabled = true
 }
-
-tasks.withType(JavaCompile) {
-    options.compilerArgs << "-parameters"
-}
-
-bootJar {
-    enabled = true
-}
