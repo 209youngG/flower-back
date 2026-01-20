@@ -28,6 +28,9 @@ public class PaymentEventListener {
         log.info("주문 취소 이벤트 수신 - 결제 취소 시작: 주문번호={}, 주문ID={}", event.getOrderNumber(), event.getOrderId());
         
         try {
+            // PG사 취소 요청
+            paymentService.cancelPaymentByOrderNumber(event.getOrderNumber(), event.getReason());
+            // 내부 상태 변경
             paymentService.cancelPayment(event.getOrderId());
             log.info("결제 취소 완료: 주문ID={}", event.getOrderId());
         } catch (Exception e) {
