@@ -42,6 +42,12 @@ public class Member {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Column(length = 20)
+    private String provider;
+
+    @Column(length = 100)
+    private String providerId;
+
     @Column(name = "point_balance", precision = 10, scale = 2)
     @Builder.Default
     private BigDecimal pointBalance = BigDecimal.ZERO;

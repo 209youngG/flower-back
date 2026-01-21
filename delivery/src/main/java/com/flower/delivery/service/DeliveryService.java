@@ -41,14 +41,13 @@ public class DeliveryService {
                 .orderId(event.getOrderId()) // PaymentCompletedEvent field is getOrderId()
                 .orderNumber(event.getOrderNumber())
                 .status(Delivery.DeliveryStatus.PREPARING) // 결제 완료 시 바로 상품 준비 단계로 진입
+                .receiverName(event.getDeliveryName())
+                .receiverPhone(event.getDeliveryPhone())
+                .address(event.getDeliveryAddress())
                 .build();
         
-        // TODO: 배송 주소 정보 추가 필요.
-        // 현재는 Order 정보를 다시 조회하거나 이벤트를 확장해야 함.
-        // 여기서는 MVP로 일단 생성만 수행.
-        
         deliveryRepository.save(delivery);
-        log.info("배송 생성 완료: 배송ID={}, 상태=PREPARING", delivery.getId());
+        log.info("배송 생성 완료: 배송ID={}, 상태=PREPARING, 주소={}", delivery.getId(), delivery.getAddress());
     }
 
     @Transactional(readOnly = true)

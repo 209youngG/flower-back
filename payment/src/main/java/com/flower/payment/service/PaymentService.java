@@ -60,7 +60,11 @@ public class PaymentService {
                     order.id(),
                     order.memberId(),
                     items,
-                    order.isDirectOrder()
+                    order.isDirectOrder(),
+                    order.deliveryName(),
+                    order.deliveryPhone(),
+                    order.deliveryAddress(),
+                    order.deliveryNote()
             ));
             
             log.info("Payment completed for order: {}", request.orderId());

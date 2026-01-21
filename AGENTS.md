@@ -9,7 +9,7 @@
 - **프레임워크**: Spring Boot 4.0.0
 - **빌드 시스템**: Gradle 9.2.1 (Groovy DSL)
 - **데이터베이스**: H2 (로컬/테스트용 인메모리), JPA/Hibernate
-- **아키텍처**: 모듈러 모놀리스 (Modular Monolith), 헥사고날 아키텍처 (Hexagonal Architecture), 이벤트 기반 (Event-Driven)
+- **아키텍처**: 모듈러 모놀리스 (Modular Monolith), 이벤트 기반 (Event-Driven)
 
 ### 1.2 명령어 (Commands)
 모든 명령어는 프로젝트 루트(`/Users/iyeong-gyun/IdeaProjects/flower-back`)에서 실행해야 합니다.
