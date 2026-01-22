@@ -65,3 +65,6 @@ Desktop.ini
 
 # Misc
 .sisyphus/
+
+# H2 Database
+flowerdb.*
