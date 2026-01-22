@@ -205,6 +205,16 @@ public class OrderService {
     }
 
     private OrderDto toOrderDto(Order order) {
+        List<OrderItemDto> itemDtos = order.getItems().stream()
+                .map(item -> OrderItemDto.builder()
+                        .productId(item.getProductId())
+                        .productName(item.getProductName())
+                        .quantity(item.getQuantity())
+                        .unitPrice(item.getUnitPrice())
+                        .orderItemId(item.getId())
+                        .build())
+                .collect(Collectors.toList());
+
         return new OrderDto(
                 order.getId(),
                 order.getOrderNumber(),
@@ -212,7 +222,8 @@ public class OrderService {
                 order.getStatus().name(),
                 order.getStatus().getDescription(),
                 order.getCreatedAt(),
-                createItemSummary(order.getItems())
+                createItemSummary(order.getItems()),
+                itemDtos
         );
     }
 

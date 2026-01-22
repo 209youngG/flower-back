@@ -1,5 +1,6 @@
 package com.flower.api.controller;
 
+import com.flower.api.dto.PaymentRequest;
 import com.flower.cart.dto.CartDto;
 import com.flower.cart.dto.CartItemDto;
 import com.flower.cart.dto.CartItemOptionDto;
@@ -17,6 +18,7 @@ import com.flower.order.service.OrderService;
 import com.flower.product.dto.ProductDto;
 import com.flower.product.dto.ProductOptionDto;
 import com.flower.product.service.ProductQueryService;
+import com.flower.review.service.ReviewQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,24 +44,22 @@ public class OrderController {
     private final OrderService orderService;
     private final CartService cartService;
     private final ProductQueryService productQueryService;
+    private final ReviewQueryService reviewQueryService;
 
     @Operation(summary = "주문 생성", description = "장바구니에 담긴 상품으로 주문을 생성합니다.")
     @PostMapping
     public ResponseEntity<CreateOrderResponse> createOrder(@RequestBody CreateOrderRequest request) {
         log.info("Received order request for member: {}", request.memberId());
 
-        // 1. 장바구니 조회 (DTO 사용)
         CartDto cart = cartService.getCartDtoByMemberId(request.memberId());
         if (cart.isEmpty()) {
             throw new IllegalArgumentException("Cart is empty");
         }
 
-        // 2. 주문 데이터 준비
         List<Long> productIds = cart.items().stream()
                 .map(CartItemDto::productId)
                 .collect(Collectors.toList());
         
-        // 상품 정보 조회 (DTO 사용)
         Map<Long, ProductDto> productMap = productQueryService.getProductsMapByIds(productIds);
 
         List<OrderItemDto> orderItems = new ArrayList<>();
@@ -91,7 +92,6 @@ public class OrderController {
                     .build());
         }
 
-        // 3. 주문 생성 (DTO 반환)
         CreateOrderResponse response = orderService.createOrder(request, orderItems);
 
         return ResponseEntity.ok(response);
@@ -102,10 +102,8 @@ public class OrderController {
     public ResponseEntity<CreateOrderResponse> createDirectOrder(@RequestBody CreateDirectOrderRequest request) {
         log.info("Received direct order request for member: {}, product: {}", request.memberId(), request.productId());
 
-        // 1. 상품 정보 조회
         ProductDto product = productQueryService.getProductById(request.productId());
         
-        // 2. 주문 상품(OrderItem) 생성
         List<OrderItemDto> orderItems = new ArrayList<>();
         
         List<OrderItemOptionDto> options = new ArrayList<>();
@@ -129,7 +127,6 @@ public class OrderController {
                 .options(options)
                 .build());
 
-        // 3. CreateOrderRequest 변환 (공통 주문 로직 재사용)
         CreateOrderRequest orderRequest = new CreateOrderRequest(
                 request.memberId(),
                 request.deliveryMethod(),
@@ -142,16 +139,17 @@ public class OrderController {
                 true
         );
 
-        // 4. 주문 생성
         CreateOrderResponse response = orderService.createOrder(orderRequest, orderItems);
 
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "내 주문 목록 조회", description = "회원의 주문 내역을 조회합니다.")
+    @Operation(summary = "내 주문 목록 조회", description = "회원의 주문 내역을 조회합니다. (리뷰 작성 여부 포함)")
     @GetMapping("/my")
     public ResponseEntity<List<OrderDto>> getMyOrders(@RequestParam Long memberId) {
-        return ResponseEntity.ok(orderService.getOrdersByMemberId(memberId));
+        List<OrderDto> orders = orderService.getOrdersByMemberId(memberId);
+        fillReviewStatus(orders);
+        return ResponseEntity.ok(orders);
     }
 
     @Operation(summary = "전체 주문 조회 (관리자)", description = "모든 회원의 주문 내역을 조회합니다.")
@@ -181,5 +179,27 @@ public class OrderController {
     public ResponseEntity<Void> cancelOrder(@PathVariable Long orderId) {
         orderService.cancelOrderById(orderId);
         return ResponseEntity.ok().build();
+    }
+
+    private void fillReviewStatus(List<OrderDto> orders) {
+        if (orders == null || orders.isEmpty()) return;
+
+        List<Long> allOrderItemIds = orders.stream()
+                .flatMap(order -> order.items().stream()) // items() 사용
+                .map(OrderItemDto::getOrderItemId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (allOrderItemIds.isEmpty()) return;
+
+        Map<Long, Boolean> reviewStatusMap = reviewQueryService.getReviewStatusMap(allOrderItemIds);
+
+        for (OrderDto order : orders) {
+            for (OrderItemDto item : order.items()) { // items() 사용
+                if (item.getOrderItemId() != null) {
+                    item.setHasReview(reviewStatusMap.getOrDefault(item.getOrderItemId(), false));
+                }
+            }
+        }
     }
 }

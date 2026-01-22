@@ -3,6 +3,7 @@ package com.flower.order.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Schema(description = "주문 정보")
 public record OrderDto(
@@ -12,5 +13,6 @@ public record OrderDto(
     String status,
     String statusDescription,
     LocalDateTime createdAt,
-    String itemSummary
+    String itemSummary,
+    List<OrderItemDto> items // 추가됨
 ) {}

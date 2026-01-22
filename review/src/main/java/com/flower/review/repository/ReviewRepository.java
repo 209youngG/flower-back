@@ -16,4 +16,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<ProductRatingStatDto> countReviewStatsByProduct();
 
     List<Review> findByOrderItemIdIn(List<Long> orderItemIds);
+    
+    @org.springframework.data.jpa.repository.Query("SELECT r.orderItemId FROM Review r WHERE r.orderItemId IN :orderItemIds AND r.isHidden = false")
+    List<Long> findOrderItemIdsByOrderItemIdIn(@org.springframework.data.repository.query.Param("orderItemIds") List<Long> orderItemIds);
 }
