@@ -315,7 +315,10 @@ public class ProductService implements ProductQueryService {
             product.getIsAvailableToday(),
             optionDtos,
             product.getCategory(),
-            product.getDeliveryType()
+            product.getDeliveryType(),
+            product.getReviewCount(),
+            product.getTotalRating(),
+            product.getAverageRating()
         );
     }
 

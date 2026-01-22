@@ -209,6 +209,27 @@ public class Product {
     }
 
     /**
+     * 리뷰 통계 제거 (감소)
+     */
+    public void removeReviewRating(int rating) {
+        if (this.reviewCount > 0) {
+            this.reviewCount--;
+            this.totalRating -= rating;
+            if (this.totalRating < 0) this.totalRating = 0L; // 방어 코드
+            calculateAverageRating();
+        }
+    }
+
+    /**
+     * 리뷰 통계 수정 (평점 변경)
+     */
+    public void updateReviewRating(int oldRating, int newRating) {
+        this.totalRating = this.totalRating - oldRating + newRating;
+        if (this.totalRating < 0) this.totalRating = 0L;
+        calculateAverageRating();
+    }
+
+    /**
      * 리뷰 통계 강제 갱신 (배치용)
      */
     public void updateReviewStats(Long count, Long totalScore) {

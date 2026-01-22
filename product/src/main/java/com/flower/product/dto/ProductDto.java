@@ -16,5 +16,8 @@ public record ProductDto(
     boolean isAvailableToday,
     List<ProductOptionDto> options,
     ProductCategory category,
-    DeliveryType deliveryType
+    DeliveryType deliveryType,
+    Long reviewCount,
+    Long totalRating,
+    Double averageRating
 ) {}
