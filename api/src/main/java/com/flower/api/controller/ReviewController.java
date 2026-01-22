@@ -2,6 +2,7 @@ package com.flower.api.controller;
 
 import com.flower.review.dto.CreateReviewRequest;
 import com.flower.review.dto.ReviewDto;
+import com.flower.review.dto.UpdateReviewRequest;
 import com.flower.review.service.ReviewService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,5 +30,22 @@ public class ReviewController {
     @GetMapping("/products/{productId}")
     public ResponseEntity<List<ReviewDto>> getProductReviews(@PathVariable Long productId) {
         return ResponseEntity.ok(reviewService.getReviewsByProduct(productId));
+    }
+
+    @Operation(summary = "리뷰 수정", description = "작성한 리뷰를 수정합니다.")
+    @PutMapping("/{reviewId}")
+    public ResponseEntity<ReviewDto> updateReview(
+            @PathVariable Long reviewId,
+            @RequestBody UpdateReviewRequest request) {
+        return ResponseEntity.ok(reviewService.updateReview(reviewId, request));
+    }
+
+    @Operation(summary = "리뷰 삭제", description = "작성한 리뷰를 삭제합니다.")
+    @DeleteMapping("/{reviewId}")
+    public ResponseEntity<Void> deleteReview(
+            @PathVariable Long reviewId,
+            @RequestParam Long memberId) {
+        reviewService.deleteReview(reviewId, memberId);
+        return ResponseEntity.ok().build();
     }
 }

@@ -59,4 +59,16 @@ public class Review {
     public void hide() {
         this.isHidden = true;
     }
+
+    public void update(Integer rating, String content) {
+        if (rating != null) {
+            if (rating < 1 || rating > 5) {
+                throw new IllegalArgumentException("Rating must be between 1 and 5");
+            }
+            this.rating = rating;
+        }
+        if (content != null && !content.isBlank()) {
+            this.content = content;
+        }
+    }
 }

@@ -1,14 +1,16 @@
 package com.flower.review.service;
 
 import com.flower.common.event.ReviewCreatedEvent;
+import com.flower.common.event.ReviewDeletedEvent;
+import com.flower.common.event.ReviewUpdatedEvent;
 import com.flower.common.exception.BusinessException;
 import com.flower.common.exception.EntityNotFoundException;
-import com.flower.common.exception.ErrorResponse;
 import com.flower.order.service.OrderModuleService;
 import com.flower.product.repository.ProductRepository;
 import com.flower.review.domain.Review;
 import com.flower.review.dto.CreateReviewRequest;
 import com.flower.review.dto.ReviewDto;
+import com.flower.review.dto.UpdateReviewRequest;
 import com.flower.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +77,7 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public List<ReviewDto> getReviewsByProduct(Long productId) {
         return reviewRepository.findByProductIdOrderByCreatedAtDesc(productId).stream()
-                .filter(review -> !review.getIsHidden()) // 숨겨진 리뷰 필터링
+                .filter(review -> !review.getIsHidden())
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
@@ -87,6 +89,48 @@ public class ReviewService {
             review.hide();
         }
         log.info("주문 취소로 인한 리뷰 숨김 처리 완료: {} 건", reviews.size());
+    }
+
+    @Transactional
+    public ReviewDto updateReview(Long reviewId, UpdateReviewRequest request) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new EntityNotFoundException("Review not found: " + reviewId));
+
+        if (!review.getMemberId().equals(request.memberId())) {
+            throw new BusinessException("본인이 작성한 리뷰만 수정할 수 있습니다.");
+        }
+
+        Integer oldRating = review.getRating();
+        review.update(request.rating(), request.content());
+
+        eventPublisher.publishEvent(new ReviewUpdatedEvent(
+                this,
+                review.getId(),
+                review.getProductId(),
+                oldRating,
+                review.getRating()
+        ));
+
+        return toDto(review);
+    }
+
+    @Transactional
+    public void deleteReview(Long reviewId, Long memberId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new EntityNotFoundException("Review not found: " + reviewId));
+
+        if (!review.getMemberId().equals(memberId)) {
+            throw new BusinessException("본인이 작성한 리뷰만 삭제할 수 있습니다.");
+        }
+
+        reviewRepository.delete(review);
+
+        eventPublisher.publishEvent(new ReviewDeletedEvent(
+                this,
+                review.getId(),
+                review.getProductId(),
+                review.getRating()
+        ));
     }
 
     private ReviewDto toDto(Review review) {

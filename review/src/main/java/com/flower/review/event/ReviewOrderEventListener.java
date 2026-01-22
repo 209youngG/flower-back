@@ -11,6 +11,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
 
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -20,6 +23,7 @@ public class ReviewOrderEventListener {
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleOrderCancelled(OrderCancelledEvent event) {
         log.info("주문 취소 이벤트 수신 - 리뷰 숨김 처리 시작: OrderId={}, OrderNumber={}", event.getOrderId(), event.getOrderNumber());
 
