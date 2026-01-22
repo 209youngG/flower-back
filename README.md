@@ -81,8 +81,8 @@ Spring Boot 4.0.0과 Java 25를 기반으로 한 꽃 쇼핑몰 백엔드 프로�
 ```bash
 ./gradlew :api:bootRun
 ```
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html` (설정 시)
-- 기본 포트: 8080
+- Swagger UI: `http://localhost:8081/swagger-ui/index.html` (설정 시)
+- 기본 포트: 8081
 
 #### 2. Batch 서버 실행 (재처리 스케줄러)
 ```bash
