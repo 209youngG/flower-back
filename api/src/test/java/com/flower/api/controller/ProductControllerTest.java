@@ -46,7 +46,10 @@ class ProductControllerTest {
             true, 
             Collections.emptyList(), 
             ProductCategory.FLOWER_BOUQUET, 
-            DeliveryType.PARCEL
+            DeliveryType.PARCEL,
+            0L,
+            0L,
+            0.0
         );
 
         given(productQueryService.getProductById(productId)).willReturn(productDto);

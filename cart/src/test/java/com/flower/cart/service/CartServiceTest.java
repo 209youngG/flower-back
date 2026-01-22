@@ -49,7 +49,10 @@ class CartServiceTest {
             true, 
             null, 
             null, 
-            null
+            null,
+            0L,
+            0L,
+            0.0
         );
 
         given(cartRepository.findByCartKey(cartKey)).willReturn(Optional.empty());
