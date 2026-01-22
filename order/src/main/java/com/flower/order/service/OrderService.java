@@ -226,12 +226,17 @@ public class OrderService {
                 ))
                 .collect(Collectors.toList());
 
+        List<Long> cancelledOrderItemIds = order.getItems().stream()
+                .map(OrderItem::getId)
+                .collect(Collectors.toList());
+
         return new OrderCancelledEvent(
                 order.getOrderNumber(),
                 order.getId(),
                 reason,
                 order.getMemberId(),
-                items
+                items,
+                cancelledOrderItemIds
         );
     }
 

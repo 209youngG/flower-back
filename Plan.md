@@ -64,11 +64,32 @@ com.flower.order
 | **P1** | **Cart** | ✅ 완료 | 과도한 헥사고날 구조 제거. `CartService` 구현 단순화. |
 | **P2** | **Payment** | ✅ 완료 | PG 연동 (Toss/Kakao) Mock 구현. 배송 정보 연동 보완. |
 | **P2** | **Delivery** | ✅ 완료 | 배송 상태 추적 로직 및 결제 완료 이벤트 리스너 보완. |
-| **P3** | **Member** | ✅ 유지 | 현재 구조 유지하되, OAuth2 등 인증 고도화. |
+| **P3** | **Member** | ✅ 완료 | 현재 구조 유지하되, OAuth2 등 인증 고도화. |
 
 ---
 
-## 4. 상세 구현 지침 (Implementation Guidelines)
+## 4. 프론트엔드 연동 가이드 (Frontend Integration Guide)
+
+### 4.1 API 연동 규격 (Interface Agreement)
+
+| 도메인 | 프론트엔드 파일 (`src/api/`) | 백엔드 API (`/api/v1/`) | 주요 DTO (Request) | 비고 |
+|:---|:---|:---|:---|:---|
+| **Auth** | `auth.ts` | `/members/login`, `/register` | `LoginRequest`, `RegisterMemberRequest` | JWT 토큰 포맷 일치 확인 (`accessToken`) |
+| **OAuth** | (신규 필요) | `/oauth2/authorization/{provider}` | - | Google 로그인 버튼 추가 및 리다이렉트 처리 (`/oauth2/redirect`) |
+| **Product** | `product.ts` | `/products` | - | 상품 목록/상세 조회 응답 필드 매핑 |
+| **Cart** | `cart.ts` | `/cart` | `AddCartItemRequest` | `cartKey` 관리 전략 (로그인 시 서버 동기화) |
+| **Order** | `order.ts` | `/orders` | `CreateOrderRequest` | 배송 정보(`receiverName` 등) 필드명 일치 필수 |
+| **Payment**| `payment.ts` | `/payments` | `PaymentRequest` | PG사 결제 승인 후 백엔드 통지 로직 |
+
+### 4.2 OAuth2 소셜 로그인 연동 프로세스
+1.  **로그인 버튼**: 프론트엔드 로그인 페이지에 'Google 로그인' 버튼 추가.
+2.  **요청**: 버튼 클릭 시 백엔드 `http://localhost:8080/oauth2/authorization/google`로 `window.location.href` 이동.
+3.  **리다이렉트**: 백엔드 인증 완료 후 `http://localhost:9000/oauth2/redirect?token={jwt}`로 리다이렉트 (백엔드 `OAuth2AuthenticationSuccessHandler` 수정 필요).
+4.  **토큰 저장**: 프론트엔드 `/oauth2/redirect` 페이지에서 URL 파라미터 `token`을 추출하여 `LocalStorage`에 저장 후 메인으로 이동.
+
+---
+
+## 5. 상세 구현 지침 (Implementation Guidelines)
 
 ### 4.1 DTO 전략 (Java Records)
 - **Request/Response**: `Java Record` 사용.

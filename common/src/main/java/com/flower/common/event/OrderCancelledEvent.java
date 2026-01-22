@@ -10,13 +10,16 @@ public class OrderCancelledEvent extends DomainEvent {
     private final String reason;
     private final Long memberId;
     private final List<OrderPlacedEvent.OrderItemInfo> items;
+    private final List<Long> cancelledOrderItemIds;
 
-    public OrderCancelledEvent(String orderNumber, Long orderId, String reason, Long memberId, List<OrderPlacedEvent.OrderItemInfo> items) {
+    public OrderCancelledEvent(String orderNumber, Long orderId, String reason, Long memberId, 
+                             List<OrderPlacedEvent.OrderItemInfo> items, List<Long> cancelledOrderItemIds) {
         super(orderNumber);
         this.orderNumber = orderNumber;
         this.orderId = orderId;
         this.reason = reason;
         this.memberId = memberId;
         this.items = items;
+        this.cancelledOrderItemIds = cancelledOrderItemIds;
     }
 }

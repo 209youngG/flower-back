@@ -16,4 +16,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items ORDER BY o.createdAt DESC")
     List<Order> findAllWithItems();
+
+    @org.springframework.data.jpa.repository.Query("SELECT i FROM OrderItem i JOIN FETCH i.order WHERE i.id = :orderItemId")
+    Optional<com.flower.order.domain.OrderItem> findOrderItemById(@org.springframework.data.repository.query.Param("orderItemId") Long orderItemId);
 }

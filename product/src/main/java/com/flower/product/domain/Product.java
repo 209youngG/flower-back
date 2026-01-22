@@ -75,6 +75,18 @@ public class Product {
     @Column(name = "thumbnail_url")
     private String thumbnailUrl;
 
+    @Column(name = "review_count")
+    @Builder.Default
+    private Long reviewCount = 0L;
+
+    @Column(name = "total_rating")
+    @Builder.Default
+    private Long totalRating = 0L;
+
+    @Column(name = "average_rating")
+    @Builder.Default
+    private Double averageRating = 0.0;
+
     @ElementCollection
     @CollectionTable(name = "product_tags", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "tag")
@@ -185,5 +197,33 @@ public class Product {
         QUICK,       // 퀵배송 (당일 도착, 서울/수도권)
         PARCEL,     // 택배배송 (전국 배송)
         MIXED        // 혼합 (퀵 + 택배 모두 가능)
+    }
+
+    /**
+     * 리뷰 통계 업데이트 (증분)
+     */
+    public void addReviewRating(int rating) {
+        this.reviewCount++;
+        this.totalRating += rating;
+        calculateAverageRating();
+    }
+
+    /**
+     * 리뷰 통계 강제 갱신 (배치용)
+     */
+    public void updateReviewStats(Long count, Long totalScore) {
+        this.reviewCount = count;
+        this.totalRating = totalScore;
+        calculateAverageRating();
+    }
+
+    private void calculateAverageRating() {
+        if (this.reviewCount > 0) {
+            this.averageRating = (double) this.totalRating / this.reviewCount;
+            // 소수점 첫째자리까지 반올림 (선택사항, 프론트에서 처리해도 됨)
+            this.averageRating = Math.round(this.averageRating * 10.0) / 10.0;
+        } else {
+            this.averageRating = 0.0;
+        }
     }
 }

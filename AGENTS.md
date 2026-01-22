@@ -83,7 +83,18 @@
 - **스타일**: BDD 스타일 (`given`, `when`, `then`).
 - **커버리지**: 도메인 서비스 및 중요 경로(critical paths)의 통합에 집중하십시오.
 
-## 5. 에이전트 행동 프로토콜 (Agent Behavior Protocols)
+## 5. Git 컨벤션 (Git Conventions)
+
+- **언어**: 커밋 메시지는 **한글**로 작성합니다. (예: `feat: OAuth2 로그인 기능 구현`)
+- **형식**: Conventional Commits (`type: subject`)를 따르되, 내용은 한글을 사용합니다.
+    - `feat`: 새로운 기능 추가
+    - `fix`: 버그 수정
+    - `docs`: 문서 수정
+    - `refactor`: 코드 리팩토링 (기능 변경 없음)
+    - `test`: 테스트 코드 추가/수정
+    - `chore`: 빌드, 패키지 매니저 설정 등
+
+## 6. 에이전트 행동 프로토콜 (Agent Behavior Protocols)
 
 1.  **검증 (Verification)**: 모든 코드 변경 후, 단일 테스트 명령어를 사용하여 관련 테스트를 실행하십시오.
     - `bash ./gradlew :<module>:test --tests "..."`
