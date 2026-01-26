@@ -269,16 +269,16 @@ public class ProductService implements ProductQueryService {
     }
 
     private void updateProductFields(Product product, UpdateProductRequest request) {
-        product.setName(request.name());
-        product.setDescription(request.description());
-        product.setPrice(request.price());
-        product.setDiscountPrice(request.discountPrice());
-        product.setStockQuantity(request.stockQuantity());
-        product.setCategory(request.category());
-        product.setIsActive(request.isActive());
-        product.setIsAvailableToday(request.isAvailableToday());
-        product.setThumbnailUrl(request.thumbnailUrl());
-        product.setDeliveryType(request.deliveryType());
+        if (request.name() != null) product.setName(request.name());
+        if (request.description() != null) product.setDescription(request.description());
+        if (request.price() != null) product.setPrice(request.price());
+        if (request.discountPrice() != null) product.setDiscountPrice(request.discountPrice());
+        if (request.stockQuantity() != null) product.setStockQuantity(request.stockQuantity());
+        if (request.category() != null) product.setCategory(request.category());
+        if (request.isActive() != null) product.setIsActive(request.isActive());
+        if (request.isAvailableToday() != null) product.setIsAvailableToday(request.isAvailableToday());
+        if (request.thumbnailUrl() != null) product.setThumbnailUrl(request.thumbnailUrl());
+        if (request.deliveryType() != null) product.setDeliveryType(request.deliveryType());
     }
 
     private void updateProductOptions(Product product, List<CreateProductOptionRequest> optionRequests) {
@@ -309,7 +309,9 @@ public class ProductService implements ProductQueryService {
             product.getId(),
             product.getName(),
             product.getEffectivePrice(),
+            product.getDiscountPrice(),
             product.getStockQuantity(),
+            product.getDescription(),
             product.getThumbnailUrl(),
             product.getIsActive(),
             product.getIsAvailableToday(),

@@ -11,7 +11,7 @@ class OrderTest {
 
     @Test
     @DisplayName("주문 총액이 올바르게 계산되어야 한다")
-    void shouldCalculateTotalAmountCorrectly() {
+    void should_calculate_total_amount_correctly() {
         // 준비
         Order order = Order.builder()
                 .orderNumber("ORD-001")

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
@@ -193,10 +194,14 @@ public class Product {
     /**
      * 배송 타입 Enum
      */
+    @Getter
+    @AllArgsConstructor
     public enum DeliveryType {
-        QUICK,       // 퀵배송 (당일 도착, 서울/수도권)
-        PARCEL,     // 택배배송 (전국 배송)
-        MIXED        // 혼합 (퀵 + 택배 모두 가능)
+        QUICK("퀵배송"),
+        PARCEL("택배배송"),
+        MIXED("혼합배송");
+
+        private final String description;
     }
 
     /**

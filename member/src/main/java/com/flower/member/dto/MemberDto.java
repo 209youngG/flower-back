@@ -11,6 +11,9 @@ public record MemberDto(
     @Schema(description = "회원 ID", example = "1")
     Long id,
 
+    @Schema(description = "로그인 ID", example = "user123")
+    String loginId,
+
     @Schema(description = "이메일", example = "user@example.com")
     String email,
 

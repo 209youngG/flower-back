@@ -70,6 +70,7 @@ public class MemberController {
     private MemberDto toDto(Member member, String token) {
         return new MemberDto(
                 member.getId(),
+                member.getLoginId(),
                 member.getEmail(),
                 member.getName(),
                 member.getPhoneNumber(),

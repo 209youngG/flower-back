@@ -13,7 +13,7 @@ class MemberTest {
 
     @Test
     @DisplayName("Should create Member instance")
-    void shouldCreateMemberInstance() {
+    void should_create_member_instance() {
         // 준비 및 실행
         Member member = new Member();
 
@@ -23,7 +23,7 @@ class MemberTest {
 
     @Test
     @DisplayName("Should be able to instantiate multiple members")
-    void shouldBeAbleToInstantiateMultipleMembers() {
+    void should_be_able_to_instantiate_multiple_members() {
         // 준비 및 실행
         Member member1 = new Member();
         Member member2 = new Member();
@@ -36,7 +36,8 @@ class MemberTest {
 
     @Test
     @DisplayName("Should extend Object")
-    void shouldExtendObject() {
+    void should_extend_object() {
+
         // 준비 및 실행
         Member member = new Member();
 
