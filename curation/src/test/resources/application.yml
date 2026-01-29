@@ -20,4 +20,6 @@ spring:
   sql:
     init:
       mode: always
-      data-locations: classpath:seasonal_flowers.sql
+      data-locations:
+        - classpath:seasonal_flowers.sql
+        - classpath:flower_languages.sql
