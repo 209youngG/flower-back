@@ -38,6 +38,7 @@ class ProductControllerTest {
         RestockProductRequest request = new RestockProductRequest(50);
         ProductDto productDto = new ProductDto(
             productId, 
+            100L, // storeId
             "Test Product", 
             BigDecimal.valueOf(1000), 
             BigDecimal.valueOf(900),

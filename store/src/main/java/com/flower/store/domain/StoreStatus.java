@@ -2,5 +2,8 @@ package com.flower.store.domain;
 
 public enum StoreStatus {
     PENDING,
-    ACTIVE
+    ACTIVE,
+    APPROVED,
+    REJECTED,
+    CLOSED
 }

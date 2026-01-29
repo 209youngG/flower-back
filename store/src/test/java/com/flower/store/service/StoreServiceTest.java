@@ -2,6 +2,7 @@ package com.flower.store.service;
 
 import com.flower.store.domain.Store;
 import com.flower.store.domain.StoreStatus;
+import com.flower.store.dto.RegisterStoreRequest;
 import com.flower.store.repository.StoreRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,30 +30,31 @@ class StoreServiceTest {
     void should_registerStore_when_validRequest() {
         // given
         Long memberId = 1L;
-        String name = "My Flower Shop";
-        String address = "Seoul, Gangnam";
-        Double lat = 37.5;
-        Double lon = 127.0;
+        RegisterStoreRequest request = new RegisterStoreRequest(
+            "My Flower Shop",
+            "Seoul, Gangnam",
+            37.5,
+            127.0,
+            "02-1234-5678",
+            "Best flower shop",
+            java.time.LocalTime.of(9, 0),
+            java.time.LocalTime.of(21, 0),
+            java.util.List.of("Sunday")
+        );
 
         Store savedStore = Store.builder()
                 .ownerId(memberId)
-                .name(name)
-                .address(address)
-                .lat(lat)
-                .lon(lon)
+                .name(request.name())
+                .address(request.address())
+                .lat(request.lat())
+                .lon(request.lon())
                 .status(StoreStatus.PENDING)
                 .build();
-        
-        // Mocking the behavior to return a store with an ID (simulate saving)
-        // Reflection or just assuming the returned object is what we want to check
-        // Since Store.id is generated, we can't easily set it without reflection or a setter (which we avoided)
-        // But for this test, we just want to verify save is called and result is handled.
-        // Actually, let's mock the return value.
         
         given(storeRepository.save(any(Store.class))).willReturn(savedStore);
 
         // when
-        storeService.registerStore(memberId, name, address, lat, lon);
+        storeService.registerStore(memberId, request);
 
         // then
         verify(storeRepository).save(any(Store.class));

@@ -8,6 +8,7 @@ import com.flower.product.domain.ProductCategory;
 
 public record ProductDto(
     Long id,
+    Long storeId,
     String name,
     BigDecimal price,
     BigDecimal discountPrice,

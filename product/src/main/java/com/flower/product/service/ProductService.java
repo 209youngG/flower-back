@@ -74,6 +74,13 @@ public class ProductService implements ProductQueryService {
     }
 
     @Transactional(readOnly = true)
+    public List<ProductDto> getProductsByStoreId(Long storeId) {
+        return productRepository.findByStoreId(storeId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public Product getProductByCode(String productCode) {
         return productRepository.findByProductCode(productCode)
                 .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다: " + productCode));
@@ -307,6 +314,7 @@ public class ProductService implements ProductQueryService {
 
         return new ProductDto(
             product.getId(),
+            product.getStoreId(),
             product.getName(),
             product.getEffectivePrice(),
             product.getDiscountPrice(),

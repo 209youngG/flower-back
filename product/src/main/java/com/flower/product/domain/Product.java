@@ -12,10 +12,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 꽃집 카탈로그 상품 엔티티
- * 구매 가능한 개별 상품을 나타냄
- */
 @Entity
 @Table(name = "products")
 @Data
@@ -27,6 +23,9 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "store_id")
+    private Long storeId;
 
     @Column(nullable = false, unique = true)
     private String productCode;
@@ -52,6 +51,10 @@ public class Product {
 
     @Column(name = "max_order_quantity")
     private Integer maxOrderQuantity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "size")
+    private ProductSize size;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -130,16 +133,10 @@ public class Product {
         return "PRD-" + System.currentTimeMillis();
     }
 
-    /**
-     * 재고 확인
-     */
     public boolean hasSufficientStock(int quantity) {
         return stockQuantity >= quantity;
     }
 
-    /**
-     * 재고 감소
-     */
     public void decreaseStock(int quantity) {
         if (!hasSufficientStock(quantity)) {
             throw new IllegalStateException("재고가 부족합니다. 현재재고: " + stockQuantity + ", 요청수량: " + quantity);
@@ -147,53 +144,32 @@ public class Product {
         this.stockQuantity -= quantity;
     }
 
-    /**
-     * 재고 증가
-     */
     public void increaseStock(int quantity) {
         this.stockQuantity += quantity;
     }
 
-    /**
-     * 유효 가격 조회 (할인가가 있으면 할인가, 없으면 정가)
-     */
     public BigDecimal getEffectivePrice() {
         return discountPrice != null ? discountPrice : price;
     }
 
-    /**
-     * 할인 여부 확인
-     */
     public boolean isOnDiscount() {
         return discountPrice != null && discountPrice.compareTo(price) < 0;
     }
 
-    /**
-     * 태그 포함 여부 확인
-     */
     public boolean hasTag(String tag) {
         return tags.contains(tag);
     }
 
-    /**
-     * 태그 추가
-     */
     public void addTag(String tag) {
         if (!tags.contains(tag)) {
             tags.add(tag);
         }
     }
 
-    /**
-     * 태그 삭제
-     */
     public void removeTag(String tag) {
         tags.remove(tag);
     }
 
-    /**
-     * 배송 타입 Enum
-     */
     @Getter
     @AllArgsConstructor
     public enum DeliveryType {
@@ -204,39 +180,27 @@ public class Product {
         private final String description;
     }
 
-    /**
-     * 리뷰 통계 업데이트 (증분)
-     */
     public void addReviewRating(int rating) {
         this.reviewCount++;
         this.totalRating += rating;
         calculateAverageRating();
     }
 
-    /**
-     * 리뷰 통계 제거 (감소)
-     */
     public void removeReviewRating(int rating) {
         if (this.reviewCount > 0) {
             this.reviewCount--;
             this.totalRating -= rating;
-            if (this.totalRating < 0) this.totalRating = 0L; // 방어 코드
+            if (this.totalRating < 0) this.totalRating = 0L;
             calculateAverageRating();
         }
     }
 
-    /**
-     * 리뷰 통계 수정 (평점 변경)
-     */
     public void updateReviewRating(int oldRating, int newRating) {
         this.totalRating = this.totalRating - oldRating + newRating;
         if (this.totalRating < 0) this.totalRating = 0L;
         calculateAverageRating();
     }
 
-    /**
-     * 리뷰 통계 강제 갱신 (배치용)
-     */
     public void updateReviewStats(Long count, Long totalScore) {
         this.reviewCount = count;
         this.totalRating = totalScore;
@@ -246,7 +210,6 @@ public class Product {
     private void calculateAverageRating() {
         if (this.reviewCount > 0) {
             this.averageRating = (double) this.totalRating / this.reviewCount;
-            // 소수점 첫째자리까지 반올림 (선택사항, 프론트에서 처리해도 됨)
             this.averageRating = Math.round(this.averageRating * 10.0) / 10.0;
         } else {
             this.averageRating = 0.0;

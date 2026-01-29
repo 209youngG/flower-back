@@ -10,9 +10,11 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/api" />
+            <option value="$PROJECT_DIR$/auction" />
             <option value="$PROJECT_DIR$/batch" />
             <option value="$PROJECT_DIR$/cart" />
             <option value="$PROJECT_DIR$/common" />
+            <option value="$PROJECT_DIR$/curation" />
             <option value="$PROJECT_DIR$/delivery" />
             <option value="$PROJECT_DIR$/inventory" />
             <option value="$PROJECT_DIR$/member" />
@@ -20,6 +22,7 @@
             <option value="$PROJECT_DIR$/payment" />
             <option value="$PROJECT_DIR$/product" />
             <option value="$PROJECT_DIR$/review" />
+            <option value="$PROJECT_DIR$/store" />
           </set>
         </option>
       </GradleProjectSettings>
